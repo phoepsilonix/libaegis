@@ -208,6 +208,7 @@ encrypt_detached(uint8_t *c, uint8_t *mac, size_t maclen, const uint8_t *m, size
         memcpy(src, ad + i, adlen % RATE);
         aegis128x4_absorb(src, state);
     }
+#pragma unroll(2)
     for (i = 0; i + RATE <= mlen; i += RATE) {
         aegis128x4_enc(c + i, m + i, state);
     }

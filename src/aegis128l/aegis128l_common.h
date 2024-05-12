@@ -243,6 +243,7 @@ stream(uint8_t *out, size_t len, const uint8_t *npub, const uint8_t *k)
 
     aegis128l_init(k, npub, state);
 
+#pragma unroll(2)
     for (i = 0; i + RATE <= len; i += RATE) {
         aegis128l_enc(out + i, src, state);
     }
