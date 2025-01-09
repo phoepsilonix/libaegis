@@ -1,7 +1,5 @@
 #include <stddef.h>
 #include <stdint.h>
-#include <stdlib.h>
-#include <string.h>
 
 #include "common.h"
 #include "softaes.h"

@@ -1,10 +1,18 @@
 #ifndef common_H
 #define common_H
 
-#include <errno.h>
 #include <stddef.h>
 #include <stdint.h>
-#include <string.h>
+
+#if defined(__wasm__) && !defined(__wasi__)
+static int errno;
+#    define memcpy(A, B, C) __builtin_memcpy((A), (B), (C));
+#    define memset(A, B, C) __builtin_memset((A), (B), (C));
+#else
+#    include <errno.h>
+#    include <stdlib.h>
+#    include <string.h>
+#endif
 
 #include "aegis.h"
 

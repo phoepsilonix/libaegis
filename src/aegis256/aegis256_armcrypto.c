@@ -1,10 +1,7 @@
 #if defined(__aarch64__) || defined(_M_ARM64)
 
-#    include <errno.h>
 #    include <stddef.h>
 #    include <stdint.h>
-#    include <stdlib.h>
-#    include <string.h>
 
 #    include "../common/common.h"
 #    include "aegis256.h"

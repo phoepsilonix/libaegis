@@ -3,7 +3,6 @@
 
 #include <stddef.h>
 #include <stdint.h>
-#include <string.h>
 
 #ifdef HAVE_ANDROID_GETCPUFEATURES
 #    include <cpu-features.h>

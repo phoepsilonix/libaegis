@@ -1,10 +1,7 @@
 #if defined(__i386__) || defined(_M_IX86) || defined(__x86_64__) || defined(_M_AMD64)
 
-#    include <errno.h>
 #    include <stddef.h>
 #    include <stdint.h>
-#    include <stdlib.h>
-#    include <string.h>
 
 #    include "../common/common.h"
 #    include "aegis256x2.h"
