@@ -916,7 +916,7 @@ test "aegis256x4 - MAC test vector" {
     try std.testing.expectEqualSlices(u8, &expected256, &mac256);
 }
 
-// Wycheproof tests
+// Rooterberg tests
 
 const JsonTest = struct {
     tcId: u64,
@@ -981,8 +981,8 @@ fn rooterberg(comptime file: []const u8, comptime func: anytype) !void {
 }
 
 test "rooterberg test vectors" {
-    try rooterberg("wycheproof/aegis128_l.json.zst", aegis.aegis128l_decrypt_detached);
-    try rooterberg("wycheproof/aegis128_l_256.json.zst", aegis.aegis128l_decrypt_detached);
-    try rooterberg("wycheproof/aegis256.json.zst", aegis.aegis256_decrypt_detached);
-    try rooterberg("wycheproof/aegis256_256.json.zst", aegis.aegis256_decrypt_detached);
+    try rooterberg("rooterberg/aegis128_l.json.zst", aegis.aegis128l_decrypt_detached);
+    try rooterberg("rooterberg/aegis128_l_256.json.zst", aegis.aegis128l_decrypt_detached);
+    try rooterberg("rooterberg/aegis256.json.zst", aegis.aegis256_decrypt_detached);
+    try rooterberg("rooterberg/aegis256_256.json.zst", aegis.aegis256_decrypt_detached);
 }
