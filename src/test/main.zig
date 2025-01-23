@@ -926,101 +926,63 @@ const JsonTest = struct {
     msg: []const u8,
     ct: []const u8,
     tag: []const u8,
-    result: []const u8,
-};
-const JsonTestGroup = struct {
-    type: []const u8,
-    tests: []const JsonTest,
+    valid: bool,
 };
 const JsonTests = struct {
-    testGroups: []JsonTestGroup,
-};
-const Result = enum {
-    valid,
-    invalid,
+    testType: []const u8,
+    algorithm: struct {
+        primitive: []const u8,
+        keySize: usize,
+        ivSize: usize,
+        tagSize: usize,
+    },
+    tests: []const JsonTest,
 };
 
 const heap = std.heap;
 const zstd = std.compress.zstd;
 
-test "aegis128l - wycheproof" {
+fn rooterberg(comptime file: []const u8, comptime func: anytype) !void {
     const alloc = std.testing.allocator;
-    var fbs = std.io.fixedBufferStream(@embedFile("wycheproof/aegis128L_test.json.zst"));
+    var fbs = std.io.fixedBufferStream(@embedFile(file));
     var window_buffer: [zstd.DecompressorOptions.default_window_buffer_len]u8 = undefined;
     var decompressor = zstd.decompressor(fbs.reader(), .{ .window_buffer = &window_buffer });
     const json = try decompressor.reader().readAllAlloc(alloc, 1000000);
     defer alloc.free(json);
     const parsed = try std.json.parseFromSlice(JsonTests, alloc, json, .{ .ignore_unknown_fields = true });
     defer parsed.deinit();
-    for (parsed.value.testGroups) |test_group| {
-        if (!std.mem.eql(u8, "AeadTest", test_group.type)) continue;
-        for (test_group.tests) |t| {
-            var arena = heap.ArenaAllocator.init(alloc);
-            defer arena.deinit();
-            var arena_alloc = arena.allocator();
-            var key: [16]u8 = undefined;
-            var nonce: [16]u8 = undefined;
-            var tag: [16]u8 = undefined;
-            const aad = try arena_alloc.alloc(u8, t.aad.len / 2);
-            const ct = try arena_alloc.alloc(u8, t.ct.len / 2);
-            const msg = try arena_alloc.alloc(u8, t.msg.len / 2);
-            const expected_msg = try arena_alloc.alloc(u8, t.msg.len / 2);
-            _ = try std.fmt.hexToBytes(&key, t.key);
-            _ = try std.fmt.hexToBytes(&nonce, t.iv);
-            _ = try std.fmt.hexToBytes(&tag, t.tag);
-            _ = try std.fmt.hexToBytes(aad, t.aad);
-            _ = try std.fmt.hexToBytes(expected_msg, t.msg);
-            _ = try std.fmt.hexToBytes(ct, t.ct);
-            const c_res = aegis.aegis128l_decrypt_detached(msg.ptr, ct.ptr, ct.len, &tag, tag.len, aad.ptr, aad.len, &nonce, &key);
-            const res: Result = if (c_res == 0) res: {
-                if (std.mem.eql(u8, msg, expected_msg)) break :res .valid;
-                break :res .invalid;
-            } else .invalid;
-            if ((std.mem.eql(u8, "invalid", t.result) and res == .valid) or (std.mem.eql(u8, "valid", t.result) and res == .invalid)) {
-                std.debug.print("Test failed: {}\n", .{t.tcId});
-                try std.testing.expect(false);
-            }
+    const tests = parsed.value;
+    try std.testing.expectEqualSlices(u8, "Aead", tests.testType);
+    for (tests.tests) |t| {
+        var arena = heap.ArenaAllocator.init(alloc);
+        defer arena.deinit();
+        var arena_alloc = arena.allocator();
+        const key = try arena_alloc.alloc(u8, tests.algorithm.keySize / 8);
+        const nonce = try arena_alloc.alloc(u8, tests.algorithm.ivSize / 8);
+        const tag = try arena_alloc.alloc(u8, tests.algorithm.tagSize / 8);
+        const aad = try arena_alloc.alloc(u8, t.aad.len / 2);
+        const ct = try arena_alloc.alloc(u8, t.ct.len / 2);
+        const msg = try arena_alloc.alloc(u8, @max(ct.len, t.msg.len / 2));
+        const expected_msg = try arena_alloc.alloc(u8, t.msg.len / 2);
+        _ = try std.fmt.hexToBytes(key, t.key);
+        _ = try std.fmt.hexToBytes(nonce, t.iv);
+        _ = try std.fmt.hexToBytes(tag, t.tag);
+        _ = try std.fmt.hexToBytes(aad, t.aad);
+        _ = try std.fmt.hexToBytes(expected_msg, t.msg);
+        _ = try std.fmt.hexToBytes(ct, t.ct);
+        const c_res = func(msg.ptr, ct.ptr, ct.len, tag.ptr, tag.len, aad.ptr, aad.len, nonce.ptr, key.ptr);
+        const valid = (c_res == 0);
+        if (valid == true) try std.testing.expectEqualSlices(u8, msg, expected_msg);
+        if (t.valid != valid) {
+            std.debug.print("Test failed: {}\n", .{t.tcId});
+            try std.testing.expect(false);
         }
     }
 }
 
-test "aegis256 - wycheproof" {
-    const alloc = std.testing.allocator;
-    var fbs = std.io.fixedBufferStream(@embedFile("wycheproof/aegis256_test.json.zst"));
-    var window_buffer: [zstd.DecompressorOptions.default_window_buffer_len]u8 = undefined;
-    var decompressor = zstd.decompressor(fbs.reader(), .{ .window_buffer = &window_buffer });
-    const json = try decompressor.reader().readAllAlloc(alloc, 1000000);
-    defer alloc.free(json);
-    const parsed = try std.json.parseFromSlice(JsonTests, alloc, json, .{ .ignore_unknown_fields = true });
-    defer parsed.deinit();
-    for (parsed.value.testGroups) |test_group| {
-        if (!std.mem.eql(u8, "AeadTest", test_group.type)) continue;
-        for (test_group.tests) |t| {
-            var arena = heap.ArenaAllocator.init(alloc);
-            defer arena.deinit();
-            var arena_alloc = arena.allocator();
-            var key: [32]u8 = undefined;
-            var nonce: [32]u8 = undefined;
-            var tag: [16]u8 = undefined;
-            const aad = try arena_alloc.alloc(u8, t.aad.len / 2);
-            const ct = try arena_alloc.alloc(u8, t.ct.len / 2);
-            const msg = try arena_alloc.alloc(u8, t.msg.len / 2);
-            const expected_msg = try arena_alloc.alloc(u8, t.msg.len / 2);
-            _ = try std.fmt.hexToBytes(&key, t.key);
-            _ = try std.fmt.hexToBytes(&nonce, t.iv);
-            _ = try std.fmt.hexToBytes(&tag, t.tag);
-            _ = try std.fmt.hexToBytes(aad, t.aad);
-            _ = try std.fmt.hexToBytes(expected_msg, t.msg);
-            _ = try std.fmt.hexToBytes(ct, t.ct);
-            const c_res = aegis.aegis256_decrypt_detached(msg.ptr, ct.ptr, ct.len, &tag, tag.len, aad.ptr, aad.len, &nonce, &key);
-            const res: Result = if (c_res == 0) res: {
-                if (std.mem.eql(u8, msg, expected_msg)) break :res .valid;
-                break :res .invalid;
-            } else .invalid;
-            if ((std.mem.eql(u8, "invalid", t.result) and res == .valid) or (std.mem.eql(u8, "valid", t.result) and res == .invalid)) {
-                std.debug.print("Test failed: {}\n", .{t.tcId});
-                try std.testing.expect(false);
-            }
-        }
-    }
+test "rooterberg test vectors" {
+    try rooterberg("wycheproof/aegis128_l.json.zst", aegis.aegis128l_decrypt_detached);
+    try rooterberg("wycheproof/aegis128_l_256.json.zst", aegis.aegis128l_decrypt_detached);
+    try rooterberg("wycheproof/aegis256.json.zst", aegis.aegis256_decrypt_detached);
+    try rooterberg("wycheproof/aegis256_256.json.zst", aegis.aegis256_decrypt_detached);
 }
