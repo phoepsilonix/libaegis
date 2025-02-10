@@ -79,6 +79,10 @@ Include `<aegis.h>` and call `aegis_init()` prior to doing anything else with th
 
 [Other AEGIS implementations](https://github.com/cfrg/draft-irtf-cfrg-aegis-aead?tab=readme-ov-file#known-implementations) are also available for most programming languages.
 
+Recommended for applications specifically targeting environments without AES instructions: [aegis-bitsliced](https://github.com/aegis-aead/aegis-bitsliced).
+
+Recommended for applications targeting a specific x86_64 CPU: [aegis-jasmin](https://github.com/aegis-aead/aegis-jasmin).
+
 ## Key differences between AEGIS variants
 
 | **Feature**          | **AEGIS-128L**                                                        | **AEGIS-256**                                | **AEGIS-128X2**                    | **AEGIS-128X4**                    | **AEGIS-256X2**                   | **AEGIS-256X4**                   |
