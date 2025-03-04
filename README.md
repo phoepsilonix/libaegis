@@ -68,7 +68,7 @@ Include `<aegis.h>` and call `aegis_init()` prior to doing anything else with th
 ## Bindings
 
 * [`aegis`](https://crates.io/crates/aegis) is a set of bindings for Rust.
-* [`go-libaegis](https://github.com/aegis-aead/go-libaegis) is a set of bindings for Go.
+* [`go-libaegis`](https://github.com/aegis-aead/go-libaegis) is a set of bindings for Go.
 
 ## Libaegis users
 
