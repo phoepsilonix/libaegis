@@ -45,6 +45,16 @@ static int errno;
 #    endif
 #endif
 
+#ifdef DISABLE_AVX2
+#    undef HAVE_AVXINTRIN_H
+#    undef HAVE_AVX2INTRIN_H
+#    undef HAVE_AVX512FINTRIN_H
+#    undef HAVE_VAESINTRIN_H
+#endif
+#ifdef DISABLE_AVX512
+#    undef HAVE_AVX512FINTRIN_H
+#endif
+
 #if defined(__BYTE_ORDER__) && __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
 #    ifndef NATIVE_LITTLE_ENDIAN
 #        define NATIVE_LITTLE_ENDIAN
