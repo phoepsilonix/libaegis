@@ -58,25 +58,28 @@ static CPUFeatures _cpu_features;
 #define AEGIS_ARM_HWCAP2_AES (1L << 0)
 
 // AArch64 hwcaps.
-#define AEGIS_AARCH64_HWCAP_ASIMD (1L << 1)
-#define AEGIS_AARCH64_HWCAP_AES (1L << 3)
-#define AEGIS_AARCH64_HWCAP_SHA3 (1L << 17)
+#define AEGIS_AARCH64_HWCAP_ASIMD   (1L << 1)
+#define AEGIS_AARCH64_HWCAP_AES     (1L << 3)
+#define AEGIS_AARCH64_HWCAP_SHA3    (1L << 17)
 #define AEGIS_AARCH64_HWCAP2_SVEAES (1L << 2)
 
 #if defined(__APPLE__) && defined(CPU_TYPE_ARM64) && defined(CPU_SUBTYPE_ARM64E)
 // sysctlbyname() parameter documentation for instruction set characteristics:
 // https://developer.apple.com/documentation/kernel/1387446-sysctlbyname/determining_instruction_set_characteristics
-static inline int _have_feature(const char *feature) {
-  int64_t feature_present = 0;
-  size_t size = sizeof(feature_present);
-  if (sysctlbyname(feature, &feature_present, &size, NULL, 0) != 0) {
-    return 0;
-  }
-  return feature_present;
+static inline int
+_have_feature(const char *feature)
+{
+    int64_t feature_present = 0;
+    size_t  size            = sizeof(feature_present);
+    if (sysctlbyname(feature, &feature_present, &size, NULL, 0) != 0) {
+        return 0;
+    }
+    return feature_present;
 }
 
 #elif (defined(__arm__) || defined(__aarch64__) || defined(_M_ARM64)) && defined(AT_HWCAP)
-static inline int _have_hwcap(int hwcap_id, int bit)
+static inline int
+_have_hwcap(int hwcap_id, int bit)
 {
     unsigned long buf = 0;
 #    ifdef HAVE_GETAUXVAL
@@ -138,8 +141,7 @@ _runtime_arm_cpu_features(CPUFeatures *const cpu_features)
 #if __ARM_FEATURE_SHA3
     cpu_features->has_neon_sha3 = 1;
 #elif defined(_M_ARM64) && defined(PF_ARM_SVE_AES_INSTRUCTIONS_AVAILABLE)
-    cpu_features->has_neon_sha3 =
-        IsProcessorFeaturePresent(PF_ARM_SVE_AES_INSTRUCTIONS_AVAILABLE);
+    cpu_features->has_neon_sha3 = IsProcessorFeaturePresent(PF_ARM_SVE_AES_INSTRUCTIONS_AVAILABLE);
 #elif defined(__APPLE__) && defined(CPU_TYPE_ARM64) && defined(CPU_SUBTYPE_ARM64E)
     cpu_features->has_neon_sha3 = _have_feature("hw.optional.arm.FEAT_SHA3");
 #elif (defined(__aarch64__) || defined(_M_ARM64)) && defined(AT_HWCAP)
@@ -157,8 +159,7 @@ _runtime_arm_cpu_features(CPUFeatures *const cpu_features)
 #if __ARM_FEATURE_SVE2_AES
     cpu_features->has_sve2_aes = 1;
 #elif defined(_M_ARM64) && defined(PF_ARM_SVE_AES_INSTRUCTIONS_AVAILABLE)
-    cpu_features->has_sve2_aes =
-        IsProcessorFeaturePresent(PF_ARM_SVE_AES_INSTRUCTIONS_AVAILABLE);
+    cpu_features->has_sve2_aes = IsProcessorFeaturePresent(PF_ARM_SVE_AES_INSTRUCTIONS_AVAILABLE);
 #elif (defined(__aarch64__) || defined(_M_ARM64)) && defined(AT_HWCAP)
     cpu_features->has_sve2_aes = _have_hwcap(AT_HWCAP2, AEGIS_AARCH64_HWCAP2_SVEAES);
 #endif
