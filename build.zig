@@ -5,12 +5,15 @@ pub fn build(b: *std.Build) void {
     const optimize = b.standardOptimizeOption(.{ .preferred_optimize_mode = .ReleaseFast });
     const version = std.SemanticVersion.parse("0.4.0") catch unreachable;
 
-    const lib = b.addStaticLibrary(.{
+    const lib = b.addLibrary(.{
         .name = "aegis",
-        .target = target,
-        .optimize = optimize,
-        .strip = true,
         .version = version,
+        .linkage = .static,
+        .root_module = b.createModule(.{
+            .target = target,
+            .optimize = optimize,
+            .strip = true,
+        }),
     });
 
     lib.linkLibC();
@@ -93,9 +96,11 @@ pub fn build(b: *std.Build) void {
     // Creates a step for unit testing. This only builds the test executable
     // but does not run it.
     const main_tests = b.addTest(.{
-        .root_source_file = b.path("src/test/main.zig"),
-        .target = target,
-        .optimize = optimize,
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("src/test/main.zig"),
+            .target = target,
+            .optimize = optimize,
+        }),
     });
 
     main_tests.addIncludePath(b.path("src/include"));
@@ -109,9 +114,11 @@ pub fn build(b: *std.Build) void {
     if (with_benchmark) {
         const benchmark = b.addExecutable(.{
             .name = "benchmark",
-            .root_source_file = b.path("src/test/benchmark.zig"),
-            .target = target,
-            .optimize = optimize,
+            .root_module = b.createModule(.{
+                .root_source_file = b.path("src/test/benchmark.zig"),
+                .target = target,
+                .optimize = optimize,
+            }),
         });
         benchmark.addIncludePath(b.path("src/include"));
         benchmark.linkLibrary(lib);
