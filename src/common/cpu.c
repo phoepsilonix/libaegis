@@ -63,11 +63,12 @@ static CPUFeatures _cpu_features;
 #define AEGIS_AARCH64_HWCAP_SHA3    (1L << 17)
 #define AEGIS_AARCH64_HWCAP2_SVEAES (1L << 2)
 
-#if defined(__APPLE__) && defined(CPU_TYPE_ARM64) && defined(CPU_SUBTYPE_ARM64E)
+#if !(__ARM_FEATURE_CRYPTO || __ARM_FEATURE_AES)
+#    if defined(__APPLE__) && defined(CPU_TYPE_ARM64) && defined(CPU_SUBTYPE_ARM64E)
 // sysctlbyname() parameter documentation for instruction set characteristics:
 // https://developer.apple.com/documentation/kernel/1387446-sysctlbyname/determining_instruction_set_characteristics
 static inline int
-_have_feature(const char *feature)
+_have_arm_feature(const char *feature)
 {
     int64_t feature_present = 0;
     size_t  size            = sizeof(feature_present);
@@ -76,6 +77,7 @@ _have_feature(const char *feature)
     }
     return feature_present;
 }
+#    endif
 
 #elif (defined(__arm__) || defined(__aarch64__) || defined(_M_ARM64)) && defined(AT_HWCAP)
 static inline int
@@ -121,7 +123,7 @@ _runtime_arm_cpu_features(CPUFeatures *const cpu_features)
     // Assuming all CPUs supported by Arm Windows have the crypto extensions.
     cpu_features->has_neon_aes = 1;
 #elif defined(__APPLE__) && defined(CPU_TYPE_ARM64) && defined(CPU_SUBTYPE_ARM64E)
-    cpu_features->has_neon_aes = _have_feature("hw.optional.arm.FEAT_AES");
+    cpu_features->has_neon_aes = _have_arm_feature("hw.optional.arm.FEAT_AES");
 #elif defined(HAVE_ANDROID_GETCPUFEATURES) && defined(ANDROID_CPU_ARM_FEATURE_AES)
     cpu_features->has_neon_aes = (android_getCpuFeatures() & ANDROID_CPU_ARM_FEATURE_AES) != 0x0;
 #elif (defined(__aarch64__) || defined(_M_ARM64)) && defined(AT_HWCAP)
@@ -143,7 +145,7 @@ _runtime_arm_cpu_features(CPUFeatures *const cpu_features)
 #elif defined(_M_ARM64) && defined(PF_ARM_SVE_AES_INSTRUCTIONS_AVAILABLE)
     cpu_features->has_neon_sha3 = IsProcessorFeaturePresent(PF_ARM_SVE_AES_INSTRUCTIONS_AVAILABLE);
 #elif defined(__APPLE__) && defined(CPU_TYPE_ARM64) && defined(CPU_SUBTYPE_ARM64E)
-    cpu_features->has_neon_sha3 = _have_feature("hw.optional.arm.FEAT_SHA3");
+    cpu_features->has_neon_sha3 = _have_arm_feature("hw.optional.arm.FEAT_SHA3");
 #elif (defined(__aarch64__) || defined(_M_ARM64)) && defined(AT_HWCAP)
     cpu_features->has_neon_sha3 = _have_hwcap(AT_HWCAP, AEGIS_AARCH64_HWCAP_SHA3);
 #endif
