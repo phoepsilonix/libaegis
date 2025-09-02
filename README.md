@@ -84,6 +84,8 @@ Recommended for applications specifically targeting environments without AES ins
 
 Recommended for applications targeting a specific x86_64 CPU: [aegis-jasmin](https://github.com/aegis-aead/aegis-jasmin).
 
+The [aegis-aead GitHub organization](https://github.com/orgs/aegis-aead/repositories) also hosts AEGIS patches for [OpenSSL](https://github.com/aegis-aead/openssl) and [BoringSSL](https://github.com/aegis-aead/boringssl).
+
 ## Key differences between AEGIS variants
 
 | **Feature**        | **AEGIS-128L**                                          | **AEGIS-256**                                           | **AEGIS-128X2**                                                           | **AEGIS-128X4**                                     | **AEGIS-256X2**                                                          | **AEGIS-256X4**                                    |
