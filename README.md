@@ -70,7 +70,7 @@ Include `<aegis.h>` and call `aegis_init()` prior to doing anything else with th
 - [`aegis`](https://crates.io/crates/aegis) is a set of bindings for Rust.
 - [`go-libaegis`](https://github.com/aegis-aead/go-libaegis) is a set of bindings for Go.
 
-## Libaegis users
+## Libaegis TLS users
 
 - [`fizz`](https://github.com/facebookincubator/fizz) is Facebook's implementation of TLS 1.3.
 - [`picotls`](https://github.com/h2o/picotls) is a TLS 1.3 implementation in C, with support for the AEGIS cipher suites.
