@@ -945,9 +945,12 @@ const zstd = std.compress.zstd;
 fn rooterberg(comptime file: []const u8, comptime func: anytype) !void {
     const alloc = std.testing.allocator;
     var window_buffer: [zstd.default_window_len + zstd.block_size_max]u8 = undefined;
-    var reader = std.io.Reader.fixed(@embedFile(file));
-    var decompressor = zstd.Decompress.init(&reader, &window_buffer, .{});
-    const json = try decompressor.reader.allocRemaining(alloc, std.io.Limit.limited(1000000));
+    var reader: std.Io.Reader = .fixed(@embedFile(file));
+    var decompressor = zstd.Decompress.init(&reader, window_buffer[0..], .{});
+    var out: std.Io.Writer.Allocating = .init(alloc);
+    defer out.deinit();
+    _ = try decompressor.reader.streamRemaining(&out.writer);
+    const json = try out.toOwnedSlice();
     defer alloc.free(json);
     const parsed = try std.json.parseFromSlice(JsonTests, alloc, json, .{ .ignore_unknown_fields = true });
     defer parsed.deinit();
