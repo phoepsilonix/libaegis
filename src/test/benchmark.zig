@@ -36,8 +36,11 @@ fn bench_aegis256() !void {
     const bits: f128 = @floatFromInt(@as(u128, msg_len) * iterations * 8);
     const elapsed_s = @as(f128, @floatFromInt(end - start)) / time.ns_per_s;
     const throughput = @as(f64, @floatCast(bits / (elapsed_s * 1000 * 1000)));
-    const stdout = std.fs.File.stdout().deprecatedWriter();
+    var stdout_buffer: [1024]u8 = undefined;
+    var stdout_writer = std.fs.File.stdout().writer(&stdout_buffer);
+    const stdout = &stdout_writer.interface;
     try stdout.print("AEGIS-256\t{d:10.2} Mb/s\n", .{throughput});
+    try stdout.flush();
 }
 
 fn bench_aegis256x2() !void {
@@ -68,8 +71,11 @@ fn bench_aegis256x2() !void {
     const bits: f128 = @floatFromInt(@as(u128, msg_len) * iterations * 8);
     const elapsed_s = @as(f128, @floatFromInt(end - start)) / time.ns_per_s;
     const throughput = @as(f64, @floatCast(bits / (elapsed_s * 1000 * 1000)));
-    const stdout = std.fs.File.stdout().deprecatedWriter();
+    var stdout_buffer: [1024]u8 = undefined;
+    var stdout_writer = std.fs.File.stdout().writer(&stdout_buffer);
+    const stdout = &stdout_writer.interface;
     try stdout.print("AEGIS-256X2\t{d:10.2} Mb/s\n", .{throughput});
+    try stdout.flush();
 }
 
 fn bench_aegis256x4() !void {
@@ -100,8 +106,11 @@ fn bench_aegis256x4() !void {
     const bits: f128 = @floatFromInt(@as(u128, msg_len) * iterations * 8);
     const elapsed_s = @as(f128, @floatFromInt(end - start)) / time.ns_per_s;
     const throughput = @as(f64, @floatCast(bits / (elapsed_s * 1000 * 1000)));
-    const stdout = std.fs.File.stdout().deprecatedWriter();
+    var stdout_buffer: [1024]u8 = undefined;
+    var stdout_writer = std.fs.File.stdout().writer(&stdout_buffer);
+    const stdout = &stdout_writer.interface;
     try stdout.print("AEGIS-256X4\t{d:10.2} Mb/s\n", .{throughput});
+    try stdout.flush();
 }
 
 fn bench_aegis128l() !void {
@@ -132,8 +141,11 @@ fn bench_aegis128l() !void {
     const bits: f128 = @floatFromInt(@as(u128, msg_len) * iterations * 8);
     const elapsed_s = @as(f128, @floatFromInt(end - start)) / time.ns_per_s;
     const throughput = @as(f64, @floatCast(bits / (elapsed_s * 1000 * 1000)));
-    const stdout = std.fs.File.stdout().deprecatedWriter();
+    var stdout_buffer: [1024]u8 = undefined;
+    var stdout_writer = std.fs.File.stdout().writer(&stdout_buffer);
+    const stdout = &stdout_writer.interface;
     try stdout.print("AEGIS-128L\t{d:10.2} Mb/s\n", .{throughput});
+    try stdout.flush();
 }
 
 fn bench_aegis128x2() !void {
@@ -164,8 +176,11 @@ fn bench_aegis128x2() !void {
     const bits: f128 = @floatFromInt(@as(u128, msg_len) * iterations * 8);
     const elapsed_s = @as(f128, @floatFromInt(end - start)) / time.ns_per_s;
     const throughput = @as(f64, @floatCast(bits / (elapsed_s * 1000 * 1000)));
-    const stdout = std.fs.File.stdout().deprecatedWriter();
+    var stdout_buffer: [1024]u8 = undefined;
+    var stdout_writer = std.fs.File.stdout().writer(&stdout_buffer);
+    const stdout = &stdout_writer.interface;
     try stdout.print("AEGIS-128X2\t{d:10.2} Mb/s\n", .{throughput});
+    try stdout.flush();
 }
 
 fn bench_aegis128x4() !void {
@@ -196,8 +211,11 @@ fn bench_aegis128x4() !void {
     const bits: f128 = @floatFromInt(@as(u128, msg_len) * iterations * 8);
     const elapsed_s = @as(f128, @floatFromInt(end - start)) / time.ns_per_s;
     const throughput = @as(f64, @floatCast(bits / (elapsed_s * 1000 * 1000)));
-    const stdout = std.fs.File.stdout().deprecatedWriter();
+    var stdout_buffer: [1024]u8 = undefined;
+    var stdout_writer = std.fs.File.stdout().writer(&stdout_buffer);
+    const stdout = &stdout_writer.interface;
     try stdout.print("AEGIS-128X4\t{d:10.2} Mb/s\n", .{throughput});
+    try stdout.flush();
 }
 
 fn bench_aegis128l_mac() !void {
@@ -223,8 +241,11 @@ fn bench_aegis128l_mac() !void {
     const bits: f128 = @floatFromInt(@as(u128, msg_len) * iterations * 8);
     const elapsed_s = @as(f128, @floatFromInt(end - start)) / time.ns_per_s;
     const throughput = @as(f64, @floatCast(bits / (elapsed_s * 1000 * 1000)));
-    const stdout = std.fs.File.stdout().deprecatedWriter();
+    var stdout_buffer: [1024]u8 = undefined;
+    var stdout_writer = std.fs.File.stdout().writer(&stdout_buffer);
+    const stdout = &stdout_writer.interface;
     try stdout.print("AEGIS-128L MAC\t{d:10.2} Mb/s\n", .{throughput});
+    try stdout.flush();
 }
 
 fn bench_aegis128x2_mac() !void {
@@ -250,8 +271,11 @@ fn bench_aegis128x2_mac() !void {
     const bits: f128 = @floatFromInt(@as(u128, msg_len) * iterations * 8);
     const elapsed_s = @as(f128, @floatFromInt(end - start)) / time.ns_per_s;
     const throughput = @as(f64, @floatCast(bits / (elapsed_s * 1000 * 1000)));
-    const stdout = std.fs.File.stdout().deprecatedWriter();
+    var stdout_buffer: [1024]u8 = undefined;
+    var stdout_writer = std.fs.File.stdout().writer(&stdout_buffer);
+    const stdout = &stdout_writer.interface;
     try stdout.print("AEGIS-128X2 MAC\t{d:10.2} Mb/s\n", .{throughput});
+    try stdout.flush();
 }
 
 fn bench_aegis128x4_mac() !void {
@@ -278,8 +302,11 @@ fn bench_aegis128x4_mac() !void {
     const bits: f128 = @floatFromInt(@as(u128, msg_len) * iterations * 8);
     const elapsed_s = @as(f128, @floatFromInt(end - start)) / time.ns_per_s;
     const throughput = @as(f64, @floatCast(bits / (elapsed_s * 1000 * 1000)));
-    const stdout = std.fs.File.stdout().deprecatedWriter();
+    var stdout_buffer: [1024]u8 = undefined;
+    var stdout_writer = std.fs.File.stdout().writer(&stdout_buffer);
+    const stdout = &stdout_writer.interface;
     try stdout.print("AEGIS-128X4 MAC\t{d:10.2} Mb/s\n", .{throughput});
+    try stdout.flush();
 }
 
 fn bench_aegis256_mac() !void {
@@ -305,8 +332,11 @@ fn bench_aegis256_mac() !void {
     const bits: f128 = @floatFromInt(@as(u128, msg_len) * iterations * 8);
     const elapsed_s = @as(f128, @floatFromInt(end - start)) / time.ns_per_s;
     const throughput = @as(f64, @floatCast(bits / (elapsed_s * 1000 * 1000)));
-    const stdout = std.fs.File.stdout().deprecatedWriter();
+    var stdout_buffer: [1024]u8 = undefined;
+    var stdout_writer = std.fs.File.stdout().writer(&stdout_buffer);
+    const stdout = &stdout_writer.interface;
     try stdout.print("AEGIS-256 MAC\t{d:10.2} Mb/s\n", .{throughput});
+    try stdout.flush();
 }
 
 fn bench_aegis256x2_mac() !void {
@@ -333,8 +363,11 @@ fn bench_aegis256x2_mac() !void {
     const bits: f128 = @floatFromInt(@as(u128, msg_len) * iterations * 8);
     const elapsed_s = @as(f128, @floatFromInt(end - start)) / time.ns_per_s;
     const throughput = @as(f64, @floatCast(bits / (elapsed_s * 1000 * 1000)));
-    const stdout = std.fs.File.stdout().deprecatedWriter();
+    var stdout_buffer: [1024]u8 = undefined;
+    var stdout_writer = std.fs.File.stdout().writer(&stdout_buffer);
+    const stdout = &stdout_writer.interface;
     try stdout.print("AEGIS-256X2 MAC\t{d:10.2} Mb/s\n", .{throughput});
+    try stdout.flush();
 }
 
 fn bench_aegis256x4_mac() !void {
@@ -361,8 +394,11 @@ fn bench_aegis256x4_mac() !void {
     const bits: f128 = @floatFromInt(@as(u128, msg_len) * iterations * 8);
     const elapsed_s = @as(f128, @floatFromInt(end - start)) / time.ns_per_s;
     const throughput = @as(f64, @floatCast(bits / (elapsed_s * 1000 * 1000)));
-    const stdout = std.fs.File.stdout().deprecatedWriter();
+    var stdout_buffer: [1024]u8 = undefined;
+    var stdout_writer = std.fs.File.stdout().writer(&stdout_buffer);
+    const stdout = &stdout_writer.interface;
     try stdout.print("AEGIS-256X4 MAC\t{d:10.2} Mb/s\n", .{throughput});
+    try stdout.flush();
 }
 
 pub fn main() !void {

@@ -2,7 +2,8 @@ const std = @import("std");
 
 pub fn build(b: *std.Build) void {
     const target = b.standardTargetOptions(.{});
-    const optimize = b.standardOptimizeOption(.{ .preferred_optimize_mode = .ReleaseFast });
+    const with_benchmark: bool = b.option(bool, "with-benchmark", "Compile benchmark") orelse false;
+    const optimize = if (with_benchmark) .ReleaseFast else b.standardOptimizeOption(.{ .preferred_optimize_mode = .ReleaseFast });
     const version = std.SemanticVersion.parse("0.4.1") catch unreachable;
 
     const lib = b.addLibrary(.{
@@ -26,7 +27,6 @@ pub fn build(b: *std.Build) void {
         lib.root_module.addCMacro("FAVOR_PERFORMANCE", "1");
     }
 
-    const with_benchmark: bool = b.option(bool, "with-benchmark", "Compile benchmark") orelse false;
     lib_options.addOption(bool, "benchmark", with_benchmark);
 
     lib.addIncludePath(b.path("src/include"));
