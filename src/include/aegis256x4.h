@@ -261,6 +261,7 @@ void aegis256x4_decrypt_unauthenticated(uint8_t *m, const uint8_t *c, size_t cle
  *
  * st_: state to initialize
  * k: key input buffer (32 bytes)
+ * npub: nonce input buffer (32 bytes)
  *
  * - The same key MUST NOT be used both for MAC and encryption.
  * - If the key is secret, the MAC is secure against forgery.
@@ -310,7 +311,7 @@ int aegis256x4_mac_final(aegis256x4_mac_state *st_, uint8_t *mac, size_t maclen)
 int aegis256x4_mac_verify(aegis256x4_mac_state *st_, const uint8_t *mac, size_t maclen);
 
 /*
- * Reset an AEGIS_MAC state.
+ * Reset an AEGIS-MAC state.
  */
 void aegis256x4_mac_reset(aegis256x4_mac_state *st_);
 
