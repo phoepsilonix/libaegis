@@ -63,11 +63,10 @@ static CPUFeatures _cpu_features;
 #define AEGIS_AARCH64_HWCAP_SHA3    (1L << 17)
 #define AEGIS_AARCH64_HWCAP2_SVEAES (1L << 2)
 
-#if !(__ARM_FEATURE_CRYPTO || __ARM_FEATURE_AES)
-#    if defined(__APPLE__) && defined(CPU_TYPE_ARM64) && defined(CPU_SUBTYPE_ARM64E)
+#if defined(__APPLE__) && defined(CPU_TYPE_ARM64) && defined(CPU_SUBTYPE_ARM64E)
 // sysctlbyname() parameter documentation for instruction set characteristics:
 // https://developer.apple.com/documentation/kernel/1387446-sysctlbyname/determining_instruction_set_characteristics
-static inline int
+static inline int __attribute__((unused))
 _have_arm_feature(const char *feature)
 {
     int64_t feature_present = 0;
@@ -77,7 +76,6 @@ _have_arm_feature(const char *feature)
     }
     return feature_present;
 }
-#    endif
 
 #elif (defined(__arm__) || defined(__aarch64__) || defined(_M_ARM64)) && defined(AT_HWCAP)
 static inline int
