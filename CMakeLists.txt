@@ -10,6 +10,12 @@ endif()
 
 include_directories("src/include")
 
+option(FAVOR_PERFORMANCE "Favor performance over side-channel mitigations" OFF)
+
+if(FAVOR_PERFORMANCE)
+  add_definitions(-DFAVOR_PERFORMANCE)
+endif()
+
 file(GLOB SOURCE_FILES "src/aegis128l/*.c" "src/aegis128x2/*.c" "src/aegis128x4/*.c" "src/aegis256/*.c" "src/aegis256x2/*.c" "src/aegis256x4/*.c" "src/common/*.c")
 file(GLOB HEADER_FILES "src/include/*.h")
 
@@ -49,7 +55,7 @@ set(CONFIG_FILE_NAME "${PROJECT_NAME}-config.cmake")
 set(CONFIG_TEMPLATE_FILE "${PROJECT_SOURCE_DIR}/cmake/${CONFIG_FILE_NAME}.in")
 set(CONFIG_FILE "${PROJECT_BINARY_DIR}/${CONFIG_FILE_NAME}")
 
-configure_package_CONFIG_FILE("${CONFIG_TEMPLATE_FILE}" "${CONFIG_FILE}"
+configure_package_config_file("${CONFIG_TEMPLATE_FILE}" "${CONFIG_FILE}"
                               INSTALL_DESTINATION "${INSTALL_CONFIG_DIR}")
 
 install(FILES "${CONFIG_FILE}" DESTINATION "${INSTALL_CONFIG_DIR}")
