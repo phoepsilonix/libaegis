@@ -306,7 +306,7 @@ void aegis256_mac_init(aegis256_mac_state *st_, const uint8_t *k, const uint8_t 
  *
  * This function can be called multiple times.
  *
- * Once the full input has been absorb, call either `_mac_final` or `_mac_verify`.
+ * Once the full input has been absorbed, call either `_mac_final` or `_mac_verify`.
  */
 int aegis256_mac_update(aegis256_mac_state *st_, const uint8_t *m, size_t mlen);
 
