@@ -561,6 +561,8 @@ state_encrypt_detached_final(aegis256x4_state *st_, uint8_t *c, size_t clen_max,
         (_aegis256x4_state *) ((((uintptr_t) &st_->opaque) + (ALIGNMENT - 1)) &
                                ~(uintptr_t) (ALIGNMENT - 1));
 
+    (void) c;
+    (void) clen_max;
     memcpy(blocks, st->blocks, sizeof blocks);
 
     if (written != NULL) {

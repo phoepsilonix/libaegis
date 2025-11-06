@@ -565,6 +565,8 @@ state_encrypt_detached_final(aegis128x4_state *st_, uint8_t *c, size_t clen_max,
         (_aegis128x4_state *) ((((uintptr_t) &st_->opaque) + (ALIGNMENT - 1)) &
                                ~(uintptr_t) (ALIGNMENT - 1));
 
+    (void) c;
+    (void) clen_max;
     memcpy(blocks, st->blocks, sizeof blocks);
 
     if (written != NULL) {
@@ -721,6 +723,8 @@ state_decrypt_detached_final(aegis128x4_state *st_, uint8_t *m, size_t mlen_max,
                                ~(uintptr_t) (ALIGNMENT - 1));
     int ret;
 
+    (void) m;
+    (void) mlen_max;
     memcpy(blocks, st->blocks, sizeof blocks);
 
     if (written != NULL) {
