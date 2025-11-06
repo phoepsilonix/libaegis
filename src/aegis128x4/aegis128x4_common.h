@@ -567,7 +567,9 @@ state_encrypt_detached_final(aegis128x4_state *st_, uint8_t *c, size_t clen_max,
 
     memcpy(blocks, st->blocks, sizeof blocks);
 
-    *written = 0;
+    if (written != NULL) {
+        *written = 0;
+    }
 
     if (st->pos != 0) {
         CRYPTO_ALIGN(ALIGNMENT) uint8_t tmp[RATE];
@@ -594,7 +596,9 @@ state_encrypt_final(aegis128x4_state *st_, uint8_t *c, size_t clen_max, size_t *
 
     memcpy(blocks, st->blocks, sizeof blocks);
 
-    *written = 0;
+    if (written != NULL) {
+        *written = 0;
+    }
     if (clen_max < maclen) {
         errno = ERANGE;
         return -1;
@@ -609,7 +613,9 @@ state_encrypt_final(aegis128x4_state *st_, uint8_t *c, size_t clen_max, size_t *
 
     aegis128x4_mac(c, maclen, st->adlen, st->mlen, blocks);
 
-    *written = maclen;
+    if (written != NULL) {
+        *written = maclen;
+    }
 
     memcpy(st->blocks, blocks, sizeof blocks);
 
@@ -717,7 +723,9 @@ state_decrypt_detached_final(aegis128x4_state *st_, uint8_t *m, size_t mlen_max,
 
     memcpy(blocks, st->blocks, sizeof blocks);
 
-    *written = 0;
+    if (written != NULL) {
+        *written = 0;
+    }
 
     if (st->pos != 0) {
         CRYPTO_ALIGN(ALIGNMENT) uint8_t tmp[RATE];

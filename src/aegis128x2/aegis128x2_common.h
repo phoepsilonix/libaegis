@@ -556,7 +556,9 @@ state_encrypt_detached_final(aegis128x2_state *st_, uint8_t *c, size_t clen_max,
 
     memcpy(blocks, st->blocks, sizeof blocks);
 
-    *written = 0;
+    if (written != NULL) {
+        *written = 0;
+    }
 
     // Ciphertext was already output during _update; absorb cached plaintext into state
     if (st->pos != 0) {
@@ -584,7 +586,6 @@ state_encrypt_final(aegis128x2_state *st_, uint8_t *c, size_t clen_max, size_t *
 
     memcpy(blocks, st->blocks, sizeof blocks);
 
-    *written = 0;
     if (clen_max < maclen) {
         errno = ERANGE;
         return -1;
@@ -600,7 +601,9 @@ state_encrypt_final(aegis128x2_state *st_, uint8_t *c, size_t clen_max, size_t *
 
     aegis128x2_mac(c, maclen, st->adlen, st->mlen, blocks);
 
-    *written = maclen;
+    if (written != NULL) {
+        *written = maclen;
+    }
 
     memcpy(st->blocks, blocks, sizeof blocks);
 
@@ -712,7 +715,9 @@ state_decrypt_detached_final(aegis128x2_state *st_, uint8_t *m, size_t mlen_max,
 
     memcpy(blocks, st->blocks, sizeof blocks);
 
-    *written = 0;
+    if (written != NULL) {
+        *written = 0;
+    }
 
     // Plaintext was already output during _update; absorb cached plaintext into state
     if (st->pos != 0) {
