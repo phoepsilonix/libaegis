@@ -502,6 +502,8 @@ state_encrypt_update(aegis256x4_state *st_, uint8_t *c, size_t clen_max, size_t 
         errno = ERANGE;
         return -1;
     }
+
+    // Handle leftover keystream from previous call
     if (st->pos != 0) {
         const size_t available = RATE - st->pos;
         const size_t n         = mlen < available ? mlen : available;
@@ -523,6 +525,8 @@ state_encrypt_update(aegis256x4_state *st_, uint8_t *c, size_t clen_max, size_t 
             memcpy(st->blocks, blocks, sizeof blocks);
             return 0;
         }
+
+        // Full block accumulated, update state
         aegis256x4_absorb_rate(st->buf, blocks);
         st->pos = 0;
     }
@@ -537,7 +541,10 @@ state_encrypt_update(aegis256x4_state *st_, uint8_t *c, size_t clen_max, size_t 
         size_t  j;
         uint8_t tmp;
 
+        // Generate keystream without updating state
         aegis256x4_squeeze_keystream(st->buf, blocks);
+
+        // XOR and store plaintext
         for (j = 0; j < left; j++) {
             tmp        = m[i + j];
             c[i + j]   = m[i + j] ^ st->buf[j];
