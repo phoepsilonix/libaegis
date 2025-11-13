@@ -416,7 +416,7 @@ state_encrypt_update(aegis256_state *st_, uint8_t *c, const uint8_t *m, size_t m
 }
 
 static int
-state_encrypt_detached_final(aegis256_state *st_, uint8_t *mac, size_t maclen)
+state_encrypt_final(aegis256_state *st_, uint8_t *mac, size_t maclen)
 {
     aegis_blocks           blocks;
     _aegis256_state *const st =
@@ -434,44 +434,6 @@ state_encrypt_detached_final(aegis256_state *st_, uint8_t *mac, size_t maclen)
     }
 
     aegis256_mac(mac, maclen, st->adlen, st->mlen, blocks);
-
-    memcpy(st->blocks, blocks, sizeof blocks);
-
-    return 0;
-}
-
-static int
-state_encrypt_final(aegis256_state *st_, uint8_t *c, size_t clen_max, size_t *written,
-                    size_t maclen)
-{
-    aegis_blocks           blocks;
-    _aegis256_state *const st =
-        (_aegis256_state *) ((((uintptr_t) &st_->opaque) + (ALIGNMENT - 1)) &
-                             ~(uintptr_t) (ALIGNMENT - 1));
-
-    memcpy(blocks, st->blocks, sizeof blocks);
-
-    if (written != NULL) {
-        *written = 0;
-    }
-    if (clen_max < maclen) {
-        errno = ERANGE;
-        return -1;
-    }
-
-    // Ciphertext was already output during _update; absorb cached plaintext into state
-    if (st->pos != 0) {
-        CRYPTO_ALIGN(ALIGNMENT) uint8_t tmp[RATE];
-        memset(tmp, 0, sizeof tmp);
-        memcpy(tmp, st->buf, st->pos);
-        aegis256_absorb_rate(tmp, blocks);
-    }
-
-    aegis256_mac(c, maclen, st->adlen, st->mlen, blocks);
-
-    if (written != NULL) {
-        *written = maclen;
-    }
 
     memcpy(st->blocks, blocks, sizeof blocks);
 

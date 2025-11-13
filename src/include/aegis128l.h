@@ -157,34 +157,15 @@ int aegis128l_state_encrypt_update(aegis128l_state *st_, uint8_t *c, const uint8
  * Finalize the incremental encryption and generate the authentication tag.
  *
  * Since update functions now output data immediately, this function does not
- * produce any additional ciphertext bytes. It only generates the authentication tag.
- *
- * st_: state to finalize
- * mac: authentication tag output buffer
- * maclen: length of the authentication tag to generate (16 or 32)
- *
- * Return 0 on success, -1 on failure.
- */
-int aegis128l_state_encrypt_detached_final(aegis128l_state *st_, uint8_t *mac, size_t maclen);
-
-/*
- * Finalize the incremental encryption and attach the authentication tag
- * to the output.
- *
- * Since update functions now output data immediately, this function does not
  * produce any additional ciphertext bytes. It only outputs the authentication tag.
- * The value of *written will always equal maclen on success.
  *
  * st_: state to finalize
- * c: output buffer for the authentication tag
- * clen_max: length of the output buffer (must be >= maclen)
- * written: number of bytes written (will be equal to maclen on success, can be NULL)
+ * mac: output buffer for the authentication tag
  * maclen: length of the authentication tag to generate (16 or 32)
  *
  * Return 0 on success, -1 on failure.
  */
-int aegis128l_state_encrypt_final(aegis128l_state *st_, uint8_t *c, size_t clen_max,
-                                  size_t *written, size_t maclen);
+int aegis128l_state_encrypt_final(aegis128l_state *st_, uint8_t *mac, size_t maclen);
 
 /*
  * Decrypt a message chunk.

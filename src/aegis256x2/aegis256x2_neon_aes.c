@@ -92,7 +92,6 @@ struct aegis256x2_implementation aegis256x2_neon_aes_implementation = {
     .stream                        = stream,
     .state_init                    = state_init,
     .state_encrypt_update          = state_encrypt_update,
-    .state_encrypt_detached_final  = state_encrypt_detached_final,
     .state_encrypt_final           = state_encrypt_final,
     .state_decrypt_detached_update = state_decrypt_detached_update,
     .state_decrypt_detached_final  = state_decrypt_detached_final,

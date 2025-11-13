@@ -112,24 +112,13 @@ aegis256x2_state_encrypt_update(aegis256x2_state *st_, uint8_t *c, const uint8_t
 }
 
 int
-aegis256x2_state_encrypt_detached_final(aegis256x2_state *st_, uint8_t *mac, size_t maclen)
+aegis256x2_state_encrypt_final(aegis256x2_state *st_, uint8_t *mac, size_t maclen)
 {
     if (maclen != 16 && maclen != 32) {
         errno = EINVAL;
         return -1;
     }
-    return implementation->state_encrypt_detached_final(st_, mac, maclen);
-}
-
-int
-aegis256x2_state_encrypt_final(aegis256x2_state *st_, uint8_t *c, size_t clen_max, size_t *written,
-                               size_t maclen)
-{
-    if (maclen != 16 && maclen != 32) {
-        errno = EINVAL;
-        return -1;
-    }
-    return implementation->state_encrypt_final(st_, c, clen_max, written, maclen);
+    return implementation->state_encrypt_final(st_, mac, maclen);
 }
 
 int
