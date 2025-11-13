@@ -557,8 +557,7 @@ state_encrypt_final(aegis256x2_state *st_, uint8_t *mac, size_t maclen)
 }
 
 static int
-state_decrypt_update(aegis256x2_state *st_, uint8_t *m, size_t mlen_max, size_t *written,
-                     const uint8_t *c, size_t clen)
+state_decrypt_update(aegis256x2_state *st_, uint8_t *m, const uint8_t *c, size_t clen)
 {
     aegis_blocks             blocks;
     _aegis256x2_state *const st =
@@ -569,13 +568,7 @@ state_decrypt_update(aegis256x2_state *st_, uint8_t *m, size_t mlen_max, size_t 
 
     memcpy(blocks, st->blocks, sizeof blocks);
 
-    *written = 0;
     st->mlen += clen;
-
-    if (m != NULL && mlen_max < clen) {
-        errno = ERANGE;
-        return -1;
-    }
 
     // Handle leftover keystream from previous call
     if (st->pos != 0) {
@@ -593,7 +586,6 @@ state_decrypt_update(aegis256x2_state *st_, uint8_t *m, size_t mlen_max, size_t 
             }
         }
         st->pos += n;
-        *written += n;
         if (m != NULL) {
             m += n;
         }
@@ -620,7 +612,6 @@ state_decrypt_update(aegis256x2_state *st_, uint8_t *m, size_t mlen_max, size_t 
             aegis256x2_dec(dst, c + i, blocks);
         }
     }
-    *written += i;
 
     left = clen - i;
     if (left != 0) {
@@ -640,7 +631,6 @@ state_decrypt_update(aegis256x2_state *st_, uint8_t *m, size_t mlen_max, size_t 
             }
         }
         st->pos = left;
-        *written += left;
     }
 
     memcpy(st->blocks, blocks, sizeof blocks);
@@ -664,7 +654,6 @@ state_decrypt_final(aegis256x2_state *st_, uint8_t *m, size_t mlen_max, size_t *
     memcpy(blocks, st->blocks, sizeof blocks);
 
     if (written != NULL) {
-        *written = 0;
     }
 
     // If there's a partial block, absorb the cached plaintext into state

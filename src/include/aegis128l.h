@@ -171,21 +171,18 @@ int aegis128l_state_encrypt_final(aegis128l_state *st_, uint8_t *mac, size_t mac
  * Decrypt a message chunk.
  *
  * This function outputs plaintext immediately without buffering. The output length
- * will match the input length (i.e., *written will equal clen on success).
+ * will match the input length (i.e., clen bytes will be written to m).
  *
  * The output should never be released to the caller until the tag has been verified.
  *
  * st_: state to update
- * m: plaintext output buffer
- * mlen_max: length of the plaintext chunk buffer (must be >= clen)
- * written: number of plaintext bytes actually written (will be equal to clen on success)
+ * m: plaintext output buffer (must be at least clen bytes)
  * c: ciphertext chunk input buffer
  * clen: length of the ciphertext chunk
  *
  * Return 0 on success, -1 on failure.
  */
-int aegis128l_state_decrypt_update(aegis128l_state *st_, uint8_t *m, size_t mlen_max,
-                                   size_t *written, const uint8_t *c, size_t clen)
+int aegis128l_state_decrypt_update(aegis128l_state *st_, uint8_t *m, const uint8_t *c, size_t clen)
     __attribute__((warn_unused_result));
 
 /*
