@@ -343,8 +343,7 @@ test "aegis-128l - incremental decryption" {
     try testing.expectEqual(ret, 0);
     mx = mx[c2.len..];
 
-    var written: usize = undefined;
-    ret = aegis.aegis128l_state_decrypt_final(&st, mx.ptr, mx.len, &written, &mac, mac.len);
+    ret = aegis.aegis128l_state_decrypt_final(&st, &mac, mac.len);
     try testing.expectEqual(ret, 0);
 
     try testing.expectEqual(mx.len, 0);
@@ -408,8 +407,7 @@ test "aegis-256 - incremental decryption" {
     try testing.expectEqual(ret, 0);
     mx = mx[c2.len..];
 
-    var written: usize = undefined;
-    ret = aegis.aegis256_state_decrypt_final(&st, mx.ptr, mx.len, &written, &mac, mac.len);
+    ret = aegis.aegis256_state_decrypt_final(&st, &mac, mac.len);
     try testing.expectEqual(ret, 0);
 
     try testing.expectEqual(mx.len, 0);
@@ -1313,8 +1311,7 @@ test "aegis-128l - streaming decryption with wrong MAC fails" {
     try testing.expectEqual(ret, 0);
     mx = mx[c.len..];
 
-    var written: usize = undefined;
-    ret = aegis.aegis128l_state_decrypt_final(&st, mx.ptr, mx.len, &written, &mac, mac_len);
+    ret = aegis.aegis128l_state_decrypt_final(&st, &mac, mac_len);
     try testing.expectEqual(ret, -1);
 }
 
@@ -1349,8 +1346,7 @@ test "aegis-256 - streaming decryption with wrong MAC fails" {
     try testing.expectEqual(ret, 0);
     mx = mx[c.len..];
 
-    var written: usize = undefined;
-    ret = aegis.aegis256_state_decrypt_final(&st, mx.ptr, mx.len, &written, &mac, mac_len);
+    ret = aegis.aegis256_state_decrypt_final(&st, &mac, mac_len);
     try testing.expectEqual(ret, -1);
 }
 
@@ -1607,8 +1603,7 @@ test "aegis-128l - streaming decryption with written validation" {
             cx_src = cx_src[chunk_len..];
         }
 
-        var written: usize = undefined;
-        ret = aegis.aegis128l_state_decrypt_final(&st, mx.ptr, mx.len, &written, &mac, mac_len);
+        ret = aegis.aegis128l_state_decrypt_final(&st, &mac, mac_len);
         try testing.expectEqual(ret, 0);
         try testing.expectEqual(mx.len, 0);
 
@@ -1659,8 +1654,7 @@ test "aegis-256 - streaming decryption with written validation" {
             cx_src = cx_src[chunk_len..];
         }
 
-        var written: usize = undefined;
-        ret = aegis.aegis256_state_decrypt_final(&st, mx.ptr, mx.len, &written, &mac, mac_len);
+        ret = aegis.aegis256_state_decrypt_final(&st, &mac, mac_len);
         try testing.expectEqual(ret, 0);
         try testing.expectEqual(mx.len, 0);
 
@@ -1711,8 +1705,7 @@ test "aegis-128x2 - streaming decryption with written validation" {
             cx_src = cx_src[chunk_len..];
         }
 
-        var written: usize = undefined;
-        ret = aegis.aegis128x2_state_decrypt_final(&st, mx.ptr, mx.len, &written, &mac, mac_len);
+        ret = aegis.aegis128x2_state_decrypt_final(&st, &mac, mac_len);
         try testing.expectEqual(ret, 0);
         try testing.expectEqual(mx.len, 0);
 
@@ -1763,8 +1756,7 @@ test "aegis-128x4 - streaming decryption with written validation" {
             cx_src = cx_src[chunk_len..];
         }
 
-        var written: usize = undefined;
-        ret = aegis.aegis128x4_state_decrypt_final(&st, mx.ptr, mx.len, &written, &mac, mac_len);
+        ret = aegis.aegis128x4_state_decrypt_final(&st, &mac, mac_len);
         try testing.expectEqual(ret, 0);
         try testing.expectEqual(mx.len, 0);
 
@@ -1815,8 +1807,7 @@ test "aegis-256x2 - streaming decryption with written validation" {
             cx_src = cx_src[chunk_len..];
         }
 
-        var written: usize = undefined;
-        ret = aegis.aegis256x2_state_decrypt_final(&st, mx.ptr, mx.len, &written, &mac, mac_len);
+        ret = aegis.aegis256x2_state_decrypt_final(&st, &mac, mac_len);
         try testing.expectEqual(ret, 0);
         try testing.expectEqual(mx.len, 0);
 
@@ -1867,8 +1858,7 @@ test "aegis-256x4 - streaming decryption with written validation" {
             cx_src = cx_src[chunk_len..];
         }
 
-        var written: usize = undefined;
-        ret = aegis.aegis256x4_state_decrypt_final(&st, mx.ptr, mx.len, &written, &mac, mac_len);
+        ret = aegis.aegis256x4_state_decrypt_final(&st, &mac, mac_len);
         try testing.expectEqual(ret, 0);
         try testing.expectEqual(mx.len, 0);
 

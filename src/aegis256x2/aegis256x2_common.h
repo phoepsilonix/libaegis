@@ -639,8 +639,7 @@ state_decrypt_update(aegis256x2_state *st_, uint8_t *m, const uint8_t *c, size_t
 }
 
 static int
-state_decrypt_final(aegis256x2_state *st_, uint8_t *m, size_t mlen_max, size_t *written,
-                    const uint8_t *mac, size_t maclen)
+state_decrypt_final(aegis256x2_state *st_, const uint8_t *mac, size_t maclen)
 {
     aegis_blocks             blocks;
     CRYPTO_ALIGN(16) uint8_t computed_mac[32];
@@ -649,12 +648,7 @@ state_decrypt_final(aegis256x2_state *st_, uint8_t *m, size_t mlen_max, size_t *
                                ~(uintptr_t) (ALIGNMENT - 1));
     int ret;
 
-    (void) m;
-    (void) mlen_max;
     memcpy(blocks, st->blocks, sizeof blocks);
-
-    if (written != NULL) {
-    }
 
     // If there's a partial block, absorb the cached plaintext into state
     // Note: the plaintext was already output during _update

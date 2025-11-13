@@ -129,14 +129,13 @@ aegis256x4_state_decrypt_update(aegis256x4_state *st_, uint8_t *m, const uint8_t
 }
 
 int
-aegis256x4_state_decrypt_final(aegis256x4_state *st_, uint8_t *m, size_t mlen_max, size_t *written,
-                               const uint8_t *mac, size_t maclen)
+aegis256x4_state_decrypt_final(aegis256x4_state *st_, const uint8_t *mac, size_t maclen)
 {
     if (maclen != 16 && maclen != 32) {
         errno = EINVAL;
         return -1;
     }
-    return implementation->state_decrypt_final(st_, m, mlen_max, written, mac, maclen);
+    return implementation->state_decrypt_final(st_, mac, maclen);
 }
 
 void

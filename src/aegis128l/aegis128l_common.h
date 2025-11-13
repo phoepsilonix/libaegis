@@ -539,8 +539,7 @@ state_decrypt_update(aegis128l_state *st_, uint8_t *m, const uint8_t *c, size_t 
 }
 
 static int
-state_decrypt_final(aegis128l_state *st_, uint8_t *m, size_t mlen_max, size_t *written,
-                    const uint8_t *mac, size_t maclen)
+state_decrypt_final(aegis128l_state *st_, const uint8_t *mac, size_t maclen)
 {
     aegis_blocks             blocks;
     CRYPTO_ALIGN(16) uint8_t computed_mac[32];
@@ -549,13 +548,7 @@ state_decrypt_final(aegis128l_state *st_, uint8_t *m, size_t mlen_max, size_t *w
                               ~(uintptr_t) (ALIGNMENT - 1));
     int ret;
 
-    (void) m;
-    (void) mlen_max;
     memcpy(blocks, st->blocks, sizeof blocks);
-
-    if (written != NULL) {
-        *written = 0;
-    }
 
     // Plaintext was already output during _update; absorb cached plaintext into state
     if (st->pos != 0) {

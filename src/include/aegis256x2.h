@@ -141,9 +141,6 @@ void aegis256x2_state_init(aegis256x2_state *st_, const uint8_t *ad, size_t adle
  * Encrypt a message chunk.
  * The same function can be used regardless of whether the tag will be attached or not.
  *
- * This function outputs ciphertext immediately without buffering. The output length
- * will match the input length.
- *
  * st_: state to update
  * c: ciphertext output buffer (must be at least mlen bytes)
  * m: plaintext input buffer
@@ -157,9 +154,6 @@ int aegis256x2_state_encrypt_update(aegis256x2_state *st_, uint8_t *c, const uin
 /*
  * Finalize the incremental encryption and generate the authentication tag.
  *
- * Since update functions now output data immediately, this function does not
- * produce any additional ciphertext bytes. It only outputs the authentication tag.
- *
  * st_: state to finalize
  * mac: output buffer for the authentication tag
  * maclen: length of the authentication tag to generate (16 or 32)
@@ -171,10 +165,8 @@ int aegis256x2_state_encrypt_final(aegis256x2_state *st_, uint8_t *mac, size_t m
 /*
  * Decrypt a message chunk.
  *
- * This function outputs plaintext immediately without buffering. The output length
- * will match the input length (i.e., clen bytes will be written to m).
- *
- * The output should never be released to the caller until the tag has been verified.
+ * The decrypted message must not be used until state_decrypt_final() has been
+ * called and returns successfully.
  *
  * st_: state to update
  * m: plaintext output buffer (must be at least clen bytes)
@@ -189,21 +181,17 @@ int aegis256x2_state_decrypt_update(aegis256x2_state *st_, uint8_t *m, const uin
 /*
  * Finalize the incremental decryption and verify the authentication tag.
  *
- * Since update functions now output data immediately, this function does not
- * produce any additional plaintext bytes (*written will always be 0).
- * It only verifies the authentication tag.
+ * This function verifies the authentication tag. It must be called after all
+ * decryption updates, and the decrypted message must not be used until this
+ * function returns successfully.
  *
  * st_: state to finalize
- * m: plaintext output buffer (unused, can be NULL)
- * mlen_max: length of the plaintext buffer (unused, can be 0)
- * written: number of plaintext bytes written (will always be 0, can be NULL)
  * mac: authentication tag input buffer
  * maclen: length of the authentication tag (16 or 32)
  *
  * Return 0 if the tag is valid, -1 otherwise.
  */
-int aegis256x2_state_decrypt_final(aegis256x2_state *st_, uint8_t *m, size_t mlen_max,
-                                   size_t *written, const uint8_t *mac, size_t maclen)
+int aegis256x2_state_decrypt_final(aegis256x2_state *st_, const uint8_t *mac, size_t maclen)
     __attribute__((warn_unused_result));
 
 /*

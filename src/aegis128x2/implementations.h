@@ -22,8 +22,7 @@ typedef struct aegis128x2_implementation {
     int (*state_encrypt_update)(aegis128x2_state *st_, uint8_t *c, const uint8_t *m, size_t mlen);
     int (*state_encrypt_final)(aegis128x2_state *st_, uint8_t *mac, size_t maclen);
     int (*state_decrypt_update)(aegis128x2_state *st_, uint8_t *m, const uint8_t *c, size_t clen);
-    int (*state_decrypt_final)(aegis128x2_state *st_, uint8_t *m, size_t mlen_max, size_t *written,
-                               const uint8_t *mac, size_t maclen);
+    int (*state_decrypt_final)(aegis128x2_state *st_, const uint8_t *mac, size_t maclen);
     void (*state_mac_init)(aegis128x2_mac_state *st_, const uint8_t *npub, const uint8_t *k);
     int (*state_mac_update)(aegis128x2_mac_state *st_, const uint8_t *ad, size_t adlen);
     int (*state_mac_final)(aegis128x2_mac_state *st_, uint8_t *mac, size_t maclen);
