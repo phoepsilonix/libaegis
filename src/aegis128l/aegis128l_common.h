@@ -365,8 +365,7 @@ state_init(aegis128l_state *st_, const uint8_t *ad, size_t adlen, const uint8_t 
 }
 
 static int
-state_encrypt_update(aegis128l_state *st_, uint8_t *c, size_t clen_max, size_t *written,
-                     const uint8_t *m, size_t mlen)
+state_encrypt_update(aegis128l_state *st_, uint8_t *c, const uint8_t *m, size_t mlen)
 {
     aegis_blocks            blocks;
     _aegis128l_state *const st =
@@ -377,13 +376,7 @@ state_encrypt_update(aegis128l_state *st_, uint8_t *c, size_t clen_max, size_t *
 
     memcpy(blocks, st->blocks, sizeof blocks);
 
-    *written = 0;
     st->mlen += mlen;
-
-    if (clen_max < mlen) {
-        errno = ERANGE;
-        return -1;
-    }
 
     // Handle leftover keystream from previous call
     if (st->pos != 0) {
@@ -398,7 +391,6 @@ state_encrypt_update(aegis128l_state *st_, uint8_t *c, size_t clen_max, size_t *
             st->buf[st->pos + j] = tmp;
         }
         st->pos += n;
-        *written += n;
         m += n;
         c += n;
         mlen -= n;
@@ -417,7 +409,6 @@ state_encrypt_update(aegis128l_state *st_, uint8_t *c, size_t clen_max, size_t *
     for (i = 0; i + RATE <= mlen; i += RATE) {
         aegis128l_enc(c + i, m + i, blocks);
     }
-    *written += i;
 
     left = mlen - i;
     if (left != 0) {
@@ -433,7 +424,6 @@ state_encrypt_update(aegis128l_state *st_, uint8_t *c, size_t clen_max, size_t *
             st->buf[j] = tmp;
         }
         st->pos = left;
-        *written += left;
     }
 
     memcpy(st->blocks, blocks, sizeof blocks);
@@ -442,21 +432,14 @@ state_encrypt_update(aegis128l_state *st_, uint8_t *c, size_t clen_max, size_t *
 }
 
 static int
-state_encrypt_detached_final(aegis128l_state *st_, uint8_t *c, size_t clen_max, size_t *written,
-                             uint8_t *mac, size_t maclen)
+state_encrypt_detached_final(aegis128l_state *st_, uint8_t *mac, size_t maclen)
 {
     aegis_blocks            blocks;
     _aegis128l_state *const st =
         (_aegis128l_state *) ((((uintptr_t) &st_->opaque) + (ALIGNMENT - 1)) &
                               ~(uintptr_t) (ALIGNMENT - 1));
 
-    (void) c;
-    (void) clen_max;
     memcpy(blocks, st->blocks, sizeof blocks);
-
-    if (written != NULL) {
-        *written = 0;
-    }
 
     // Ciphertext was already output during _update; absorb cached plaintext into state
     if (st->pos != 0) {

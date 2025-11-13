@@ -142,38 +142,31 @@ void aegis256x4_state_init(aegis256x4_state *st_, const uint8_t *ad, size_t adle
  * The same function can be used regardless of whether the tag will be attached or not.
  *
  * This function outputs ciphertext immediately without buffering. The output length
- * will match the input length (i.e., *written will equal mlen on success).
+ * will match the input length.
  *
  * st_: state to update
- * c: ciphertext output buffer
- * clen_max: length of the ciphertext chunk buffer (must be >= mlen)
- * written: number of ciphertext bytes actually written (will be equal to mlen on success)
+ * c: ciphertext output buffer (must be at least mlen bytes)
  * m: plaintext input buffer
  * mlen: length of the plaintext
  *
  * Return 0 on success, -1 on failure.
  */
-int aegis256x4_state_encrypt_update(aegis256x4_state *st_, uint8_t *c, size_t clen_max,
-                                    size_t *written, const uint8_t *m, size_t mlen);
+int aegis256x4_state_encrypt_update(aegis256x4_state *st_, uint8_t *c, const uint8_t *m,
+                                    size_t mlen);
 
 /*
  * Finalize the incremental encryption and generate the authentication tag.
  *
  * Since update functions now output data immediately, this function does not
- * produce any additional ciphertext bytes (*written will always be 0).
- * It only generates the authentication tag.
+ * produce any additional ciphertext bytes. It only generates the authentication tag.
  *
  * st_: state to finalize
- * c: output buffer (unused, can be NULL)
- * clen_max: length of the output buffer (unused, can be 0)
- * written: number of ciphertext bytes written (will always be 0, can be NULL)
  * mac: authentication tag output buffer
  * maclen: length of the authentication tag to generate (16 or 32)
  *
  * Return 0 on success, -1 on failure.
  */
-int aegis256x4_state_encrypt_detached_final(aegis256x4_state *st_, uint8_t *c, size_t clen_max,
-                                            size_t *written, uint8_t *mac, size_t maclen);
+int aegis256x4_state_encrypt_detached_final(aegis256x4_state *st_, uint8_t *mac, size_t maclen);
 
 /*
  * Finalize the incremental encryption and attach the authentication tag

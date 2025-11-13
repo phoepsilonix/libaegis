@@ -119,7 +119,6 @@ test "aegis-128l - incremental encryption" {
     random.bytes(&key);
 
     var st: aegis.aegis128l_state = undefined;
-    var written: usize = undefined;
 
     aegis.aegis128l_state_init(&st, ad.ptr, ad.len, &nonce, &key);
 
@@ -129,21 +128,20 @@ test "aegis-128l - incremental encryption" {
     const m1 = msg[msg.len / 3 .. 2 * msg.len / 3];
     const m2 = msg[2 * msg.len / 3 ..];
 
-    var ret = aegis.aegis128l_state_encrypt_update(&st, cx.ptr, cx.len, &written, m0.ptr, m0.len);
+    var ret = aegis.aegis128l_state_encrypt_update(&st, cx.ptr, m0.ptr, m0.len);
     try testing.expectEqual(ret, 0);
-    cx = cx[written..];
+    cx = cx[m0.len..];
 
-    ret = aegis.aegis128l_state_encrypt_update(&st, cx.ptr, cx.len, &written, m1.ptr, m1.len);
+    ret = aegis.aegis128l_state_encrypt_update(&st, cx.ptr, m1.ptr, m1.len);
     try testing.expectEqual(ret, 0);
-    cx = cx[written..];
+    cx = cx[m1.len..];
 
-    ret = aegis.aegis128l_state_encrypt_update(&st, cx.ptr, cx.len, &written, m2.ptr, m2.len);
+    ret = aegis.aegis128l_state_encrypt_update(&st, cx.ptr, m2.ptr, m2.len);
     try testing.expectEqual(ret, 0);
-    cx = cx[written..];
+    cx = cx[m2.len..];
 
-    ret = aegis.aegis128l_state_encrypt_detached_final(&st, cx.ptr, cx.len, &written, &mac, mac.len);
+    ret = aegis.aegis128l_state_encrypt_detached_final(&st, &mac, mac.len);
     try testing.expectEqual(ret, 0);
-    cx = cx[written..];
     try testing.expectEqual(cx.len, 0);
 
     ret = aegis.aegis128l_encrypt_detached(c2.ptr, &mac, mac_len, msg.ptr, msg.len, ad.ptr, ad.len, &nonce, &key);
@@ -192,7 +190,6 @@ test "aegis-256 - incremental encryption" {
     random.bytes(&key);
 
     var st: aegis.aegis256_state = undefined;
-    var written: usize = undefined;
 
     aegis.aegis256_state_init(&st, ad.ptr, ad.len, &nonce, &key);
 
@@ -202,21 +199,21 @@ test "aegis-256 - incremental encryption" {
     const m1 = msg[msg.len / 3 .. 2 * msg.len / 3];
     const m2 = msg[2 * msg.len / 3 ..];
 
-    var ret = aegis.aegis256_state_encrypt_update(&st, cx.ptr, cx.len, &written, m0.ptr, m0.len);
+    var ret = aegis.aegis256_state_encrypt_update(&st, cx.ptr, m0.ptr, m0.len);
     try testing.expectEqual(ret, 0);
-    cx = cx[written..];
+    cx = cx[m0.len..];
 
-    ret = aegis.aegis256_state_encrypt_update(&st, cx.ptr, cx.len, &written, m1.ptr, m1.len);
+    ret = aegis.aegis256_state_encrypt_update(&st, cx.ptr, m1.ptr, m1.len);
     try testing.expectEqual(ret, 0);
-    cx = cx[written..];
+    cx = cx[m1.len..];
 
-    ret = aegis.aegis256_state_encrypt_update(&st, cx.ptr, cx.len, &written, m2.ptr, m2.len);
+    ret = aegis.aegis256_state_encrypt_update(&st, cx.ptr, m2.ptr, m2.len);
     try testing.expectEqual(ret, 0);
-    cx = cx[written..];
+    cx = cx[m2.len..];
 
-    ret = aegis.aegis256_state_encrypt_detached_final(&st, cx.ptr, cx.len, &written, &mac, mac.len);
+    ret = aegis.aegis256_state_encrypt_detached_final(&st, &mac, mac.len);
     try testing.expectEqual(ret, 0);
-    cx = cx[written..];
+    
     try testing.expectEqual(cx.len, 0);
 
     ret = aegis.aegis256_encrypt_detached(c2.ptr, &mac, mac_len, msg.ptr, msg.len, ad.ptr, ad.len, &nonce, &key);
@@ -261,21 +258,21 @@ test "aegis-256 - incremental encryption 2" {
     const m2 = msg[11 + 21 .. 11 + 21 + 311];
     const m3 = msg[11 + 21 + 311 ..];
 
-    var ret = aegis.aegis256_state_encrypt_update(&st, cx.ptr, cx.len, &written, m0.ptr, m0.len);
+    var ret = aegis.aegis256_state_encrypt_update(&st, cx.ptr, m0.ptr, m0.len);
     try testing.expectEqual(ret, 0);
-    cx = cx[written..];
+    cx = cx[m0.len..];
 
-    ret = aegis.aegis256_state_encrypt_update(&st, cx.ptr, cx.len, &written, m1.ptr, m1.len);
+    ret = aegis.aegis256_state_encrypt_update(&st, cx.ptr, m1.ptr, m1.len);
     try testing.expectEqual(ret, 0);
-    cx = cx[written..];
+    cx = cx[m1.len..];
 
-    ret = aegis.aegis256_state_encrypt_update(&st, cx.ptr, cx.len, &written, m2.ptr, m2.len);
+    ret = aegis.aegis256_state_encrypt_update(&st, cx.ptr, m2.ptr, m2.len);
     try testing.expectEqual(ret, 0);
-    cx = cx[written..];
+    cx = cx[m2.len..];
 
-    ret = aegis.aegis256_state_encrypt_update(&st, cx.ptr, cx.len, &written, m3.ptr, m3.len);
+    ret = aegis.aegis256_state_encrypt_update(&st, cx.ptr, m3.ptr, m3.len);
     try testing.expectEqual(ret, 0);
-    cx = cx[written..];
+    cx = cx[m3.len..];
 
     ret = aegis.aegis256_state_encrypt_final(&st, cx.ptr, cx.len, &written, mac_len);
     try testing.expectEqual(ret, 0);
@@ -1013,18 +1010,17 @@ test "aegis-128l - streaming byte-by-byte" {
     try testing.expectEqual(ret, 0);
 
     var st: aegis.aegis128l_state = undefined;
-    var written: usize = undefined;
     var cx: []u8 = &c;
     aegis.aegis128l_state_init(&st, &ad, ad.len, &nonce, &key);
 
     for (msg) |byte| {
         const single_byte = [_]u8{byte};
-        ret = aegis.aegis128l_state_encrypt_update(&st, cx.ptr, cx.len, &written, &single_byte, 1);
+        ret = aegis.aegis128l_state_encrypt_update(&st, cx.ptr, &single_byte, 1);
         try testing.expectEqual(ret, 0);
-        cx = cx[written..];
+        cx = cx[1..];
     }
 
-    ret = aegis.aegis128l_state_encrypt_detached_final(&st, cx.ptr, cx.len, &written, &mac, mac_len);
+    ret = aegis.aegis128l_state_encrypt_detached_final(&st, &mac, mac.len);
     try testing.expectEqual(ret, 0);
     try testing.expectEqual(cx.len, 0);
 
@@ -1055,18 +1051,17 @@ test "aegis-256 - streaming byte-by-byte" {
     try testing.expectEqual(ret, 0);
 
     var st: aegis.aegis256_state = undefined;
-    var written: usize = undefined;
     var cx: []u8 = &c;
     aegis.aegis256_state_init(&st, &ad, ad.len, &nonce, &key);
 
     for (msg) |byte| {
         const single_byte = [_]u8{byte};
-        ret = aegis.aegis256_state_encrypt_update(&st, cx.ptr, cx.len, &written, &single_byte, 1);
+        ret = aegis.aegis256_state_encrypt_update(&st, cx.ptr, &single_byte, 1);
         try testing.expectEqual(ret, 0);
-        cx = cx[written..];
+        cx = cx[1..];
     }
 
-    ret = aegis.aegis256_state_encrypt_detached_final(&st, cx.ptr, cx.len, &written, &mac, mac_len);
+    ret = aegis.aegis256_state_encrypt_detached_final(&st, &mac, mac.len);
     try testing.expectEqual(ret, 0);
     try testing.expectEqual(cx.len, 0);
 
@@ -1102,7 +1097,6 @@ test "aegis-128l - streaming at RATE boundaries" {
         try testing.expectEqual(ret, 0);
 
         var st: aegis.aegis128l_state = undefined;
-        var written: usize = undefined;
         var cx: []u8 = &c;
         var mx_src: []const u8 = &msg;
 
@@ -1110,19 +1104,19 @@ test "aegis-128l - streaming at RATE boundaries" {
 
         while (mx_src.len >= rate) {
             const chunk = mx_src[0..rate];
-            ret = aegis.aegis128l_state_encrypt_update(&st, cx.ptr, cx.len, &written, chunk.ptr, rate);
+            ret = aegis.aegis128l_state_encrypt_update(&st, cx.ptr, chunk.ptr, rate);
             try testing.expectEqual(ret, 0);
-            cx = cx[written..];
+            cx = cx[rate..];
             mx_src = mx_src[rate..];
         }
 
         if (mx_src.len > 0) {
-            ret = aegis.aegis128l_state_encrypt_update(&st, cx.ptr, cx.len, &written, mx_src.ptr, mx_src.len);
+            ret = aegis.aegis128l_state_encrypt_update(&st, cx.ptr, mx_src.ptr, mx_src.len);
             try testing.expectEqual(ret, 0);
-            cx = cx[written..];
+            cx = cx[mx_src.len..];
         }
 
-        ret = aegis.aegis128l_state_encrypt_detached_final(&st, cx.ptr, cx.len, &written, &mac, mac_len);
+        ret = aegis.aegis128l_state_encrypt_detached_final(&st, &mac, mac.len);
         try testing.expectEqual(ret, 0);
         try testing.expectEqual(cx.len, 0);
 
@@ -1159,7 +1153,6 @@ test "aegis-256 - streaming at RATE boundaries" {
         try testing.expectEqual(ret, 0);
 
         var st: aegis.aegis256_state = undefined;
-        var written: usize = undefined;
         var cx: []u8 = &c;
         var mx_src: []const u8 = &msg;
 
@@ -1167,19 +1160,19 @@ test "aegis-256 - streaming at RATE boundaries" {
 
         while (mx_src.len >= rate) {
             const chunk = mx_src[0..rate];
-            ret = aegis.aegis256_state_encrypt_update(&st, cx.ptr, cx.len, &written, chunk.ptr, rate);
+            ret = aegis.aegis256_state_encrypt_update(&st, cx.ptr, chunk.ptr, rate);
             try testing.expectEqual(ret, 0);
-            cx = cx[written..];
+            cx = cx[rate..];
             mx_src = mx_src[rate..];
         }
 
         if (mx_src.len > 0) {
-            ret = aegis.aegis256_state_encrypt_update(&st, cx.ptr, cx.len, &written, mx_src.ptr, mx_src.len);
+            ret = aegis.aegis256_state_encrypt_update(&st, cx.ptr, mx_src.ptr, mx_src.len);
             try testing.expectEqual(ret, 0);
-            cx = cx[written..];
+            cx = cx[mx_src.len..];
         }
 
-        ret = aegis.aegis256_state_encrypt_detached_final(&st, cx.ptr, cx.len, &written, &mac, mac_len);
+        ret = aegis.aegis256_state_encrypt_detached_final(&st, &mac, mac.len);
         try testing.expectEqual(ret, 0);
         try testing.expectEqual(cx.len, 0);
 
@@ -1211,32 +1204,28 @@ test "aegis-128l - streaming with empty updates" {
     try testing.expectEqual(ret, 0);
 
     var st: aegis.aegis128l_state = undefined;
-    var written: usize = undefined;
     var cx: []u8 = &c;
     aegis.aegis128l_state_init(&st, &ad, ad.len, &nonce, &key);
 
-    ret = aegis.aegis128l_state_encrypt_update(&st, cx.ptr, cx.len, &written, null, 0);
+    ret = aegis.aegis128l_state_encrypt_update(&st, cx.ptr, null, 0);
     try testing.expectEqual(ret, 0);
-    try testing.expectEqual(written, 0);
 
     const mid = msg.len / 2;
-    ret = aegis.aegis128l_state_encrypt_update(&st, cx.ptr, cx.len, &written, &msg, mid);
+    ret = aegis.aegis128l_state_encrypt_update(&st, cx.ptr, &msg, mid);
     try testing.expectEqual(ret, 0);
-    cx = cx[written..];
+    cx = cx[mid..];
 
-    ret = aegis.aegis128l_state_encrypt_update(&st, cx.ptr, cx.len, &written, null, 0);
+    ret = aegis.aegis128l_state_encrypt_update(&st, cx.ptr, null, 0);
     try testing.expectEqual(ret, 0);
-    try testing.expectEqual(written, 0);
 
-    ret = aegis.aegis128l_state_encrypt_update(&st, cx.ptr, cx.len, &written, msg[mid..].ptr, msg.len - mid);
+    ret = aegis.aegis128l_state_encrypt_update(&st, cx.ptr, msg[mid..].ptr, msg.len - mid);
     try testing.expectEqual(ret, 0);
-    cx = cx[written..];
+    cx = cx[msg.len - mid..];
 
-    ret = aegis.aegis128l_state_encrypt_update(&st, cx.ptr, cx.len, &written, null, 0);
+    ret = aegis.aegis128l_state_encrypt_update(&st, cx.ptr, null, 0);
     try testing.expectEqual(ret, 0);
-    try testing.expectEqual(written, 0);
 
-    ret = aegis.aegis128l_state_encrypt_detached_final(&st, cx.ptr, cx.len, &written, &mac, mac_len);
+    ret = aegis.aegis128l_state_encrypt_detached_final(&st, &mac, mac.len);
     try testing.expectEqual(ret, 0);
     try testing.expectEqual(cx.len, 0);
 
@@ -1267,32 +1256,28 @@ test "aegis-256 - streaming with empty updates" {
     try testing.expectEqual(ret, 0);
 
     var st: aegis.aegis256_state = undefined;
-    var written: usize = undefined;
     var cx: []u8 = &c;
     aegis.aegis256_state_init(&st, &ad, ad.len, &nonce, &key);
 
-    ret = aegis.aegis256_state_encrypt_update(&st, cx.ptr, cx.len, &written, null, 0);
+    ret = aegis.aegis256_state_encrypt_update(&st, cx.ptr, null, 0);
     try testing.expectEqual(ret, 0);
-    try testing.expectEqual(written, 0);
 
     const mid = msg.len / 2;
-    ret = aegis.aegis256_state_encrypt_update(&st, cx.ptr, cx.len, &written, &msg, mid);
+    ret = aegis.aegis256_state_encrypt_update(&st, cx.ptr, &msg, mid);
     try testing.expectEqual(ret, 0);
-    cx = cx[written..];
+    cx = cx[mid..];
 
-    ret = aegis.aegis256_state_encrypt_update(&st, cx.ptr, cx.len, &written, null, 0);
+    ret = aegis.aegis256_state_encrypt_update(&st, cx.ptr, null, 0);
     try testing.expectEqual(ret, 0);
-    try testing.expectEqual(written, 0);
 
-    ret = aegis.aegis256_state_encrypt_update(&st, cx.ptr, cx.len, &written, msg[mid..].ptr, msg.len - mid);
+    ret = aegis.aegis256_state_encrypt_update(&st, cx.ptr, msg[mid..].ptr, msg.len - mid);
     try testing.expectEqual(ret, 0);
-    cx = cx[written..];
+    cx = cx[msg.len - mid..];
 
-    ret = aegis.aegis256_state_encrypt_update(&st, cx.ptr, cx.len, &written, null, 0);
+    ret = aegis.aegis256_state_encrypt_update(&st, cx.ptr, null, 0);
     try testing.expectEqual(ret, 0);
-    try testing.expectEqual(written, 0);
 
-    ret = aegis.aegis256_state_encrypt_detached_final(&st, cx.ptr, cx.len, &written, &mac, mac_len);
+    ret = aegis.aegis256_state_encrypt_detached_final(&st, &mac, mac.len);
     try testing.expectEqual(ret, 0);
     try testing.expectEqual(cx.len, 0);
 
@@ -1398,7 +1383,6 @@ test "aegis-128x2 - streaming at RATE boundaries" {
     try testing.expectEqual(ret, 0);
 
     var st: aegis.aegis128x2_state = undefined;
-    var written: usize = undefined;
     var cx: []u8 = &c;
     var mx_src: []const u8 = &msg;
 
@@ -1406,19 +1390,19 @@ test "aegis-128x2 - streaming at RATE boundaries" {
 
     while (mx_src.len >= rate) {
         const chunk = mx_src[0..rate];
-        ret = aegis.aegis128x2_state_encrypt_update(&st, cx.ptr, cx.len, &written, chunk.ptr, rate);
+        ret = aegis.aegis128x2_state_encrypt_update(&st, cx.ptr, chunk.ptr, rate);
         try testing.expectEqual(ret, 0);
-        cx = cx[written..];
+        cx = cx[rate..];
         mx_src = mx_src[rate..];
     }
 
     if (mx_src.len > 0) {
-        ret = aegis.aegis128x2_state_encrypt_update(&st, cx.ptr, cx.len, &written, mx_src.ptr, mx_src.len);
+        ret = aegis.aegis128x2_state_encrypt_update(&st, cx.ptr, mx_src.ptr, mx_src.len);
         try testing.expectEqual(ret, 0);
-        cx = cx[written..];
+        cx = cx[mx_src.len..];
     }
 
-    ret = aegis.aegis128x2_state_encrypt_detached_final(&st, cx.ptr, cx.len, &written, &mac, mac_len);
+    ret = aegis.aegis128x2_state_encrypt_detached_final(&st, &mac, mac.len);
     try testing.expectEqual(ret, 0);
     try testing.expectEqual(cx.len, 0);
 
@@ -1452,7 +1436,6 @@ test "aegis-128x4 - streaming at RATE boundaries" {
     try testing.expectEqual(ret, 0);
 
     var st: aegis.aegis128x4_state = undefined;
-    var written: usize = undefined;
     var cx: []u8 = &c;
     var mx_src: []const u8 = &msg;
 
@@ -1460,19 +1443,19 @@ test "aegis-128x4 - streaming at RATE boundaries" {
 
     while (mx_src.len >= rate) {
         const chunk = mx_src[0..rate];
-        ret = aegis.aegis128x4_state_encrypt_update(&st, cx.ptr, cx.len, &written, chunk.ptr, rate);
+        ret = aegis.aegis128x4_state_encrypt_update(&st, cx.ptr, chunk.ptr, rate);
         try testing.expectEqual(ret, 0);
-        cx = cx[written..];
+        cx = cx[rate..];
         mx_src = mx_src[rate..];
     }
 
     if (mx_src.len > 0) {
-        ret = aegis.aegis128x4_state_encrypt_update(&st, cx.ptr, cx.len, &written, mx_src.ptr, mx_src.len);
+        ret = aegis.aegis128x4_state_encrypt_update(&st, cx.ptr, mx_src.ptr, mx_src.len);
         try testing.expectEqual(ret, 0);
-        cx = cx[written..];
+        cx = cx[mx_src.len..];
     }
 
-    ret = aegis.aegis128x4_state_encrypt_detached_final(&st, cx.ptr, cx.len, &written, &mac, mac_len);
+    ret = aegis.aegis128x4_state_encrypt_detached_final(&st, &mac, mac.len);
     try testing.expectEqual(ret, 0);
     try testing.expectEqual(cx.len, 0);
 
@@ -1506,7 +1489,6 @@ test "aegis-256x2 - streaming at RATE boundaries" {
     try testing.expectEqual(ret, 0);
 
     var st: aegis.aegis256x2_state = undefined;
-    var written: usize = undefined;
     var cx: []u8 = &c;
     var mx_src: []const u8 = &msg;
 
@@ -1514,21 +1496,20 @@ test "aegis-256x2 - streaming at RATE boundaries" {
 
     while (mx_src.len >= rate) {
         const chunk = mx_src[0..rate];
-        ret = aegis.aegis256x2_state_encrypt_update(&st, cx.ptr, cx.len, &written, chunk.ptr, rate);
+        ret = aegis.aegis256x2_state_encrypt_update(&st, cx.ptr, chunk.ptr, rate);
         try testing.expectEqual(ret, 0);
-        cx = cx[written..];
+        cx = cx[rate..];
         mx_src = mx_src[rate..];
     }
 
     if (mx_src.len > 0) {
-        ret = aegis.aegis256x2_state_encrypt_update(&st, cx.ptr, cx.len, &written, mx_src.ptr, mx_src.len);
+        ret = aegis.aegis256x2_state_encrypt_update(&st, cx.ptr, mx_src.ptr, mx_src.len);
         try testing.expectEqual(ret, 0);
-        cx = cx[written..];
+        cx = cx[mx_src.len..];
     }
 
-    ret = aegis.aegis256x2_state_encrypt_detached_final(&st, cx.ptr, cx.len, &written, &mac, mac_len);
+    ret = aegis.aegis256x2_state_encrypt_detached_final(&st, &mac, mac_len);
     try testing.expectEqual(ret, 0);
-    try testing.expectEqual(cx.len, 0);
 
     try testing.expectEqualSlices(u8, &c, &c2);
     try testing.expectEqualSlices(u8, &mac, &mac2);
@@ -1560,7 +1541,6 @@ test "aegis-256x4 - streaming at RATE boundaries" {
     try testing.expectEqual(ret, 0);
 
     var st: aegis.aegis256x4_state = undefined;
-    var written: usize = undefined;
     var cx: []u8 = &c;
     var mx_src: []const u8 = &msg;
 
@@ -1568,21 +1548,20 @@ test "aegis-256x4 - streaming at RATE boundaries" {
 
     while (mx_src.len >= rate) {
         const chunk = mx_src[0..rate];
-        ret = aegis.aegis256x4_state_encrypt_update(&st, cx.ptr, cx.len, &written, chunk.ptr, rate);
+        ret = aegis.aegis256x4_state_encrypt_update(&st, cx.ptr, chunk.ptr, rate);
         try testing.expectEqual(ret, 0);
-        cx = cx[written..];
+        cx = cx[rate..];
         mx_src = mx_src[rate..];
     }
 
     if (mx_src.len > 0) {
-        ret = aegis.aegis256x4_state_encrypt_update(&st, cx.ptr, cx.len, &written, mx_src.ptr, mx_src.len);
+        ret = aegis.aegis256x4_state_encrypt_update(&st, cx.ptr, mx_src.ptr, mx_src.len);
         try testing.expectEqual(ret, 0);
-        cx = cx[written..];
+        cx = cx[mx_src.len..];
     }
 
-    ret = aegis.aegis256x4_state_encrypt_detached_final(&st, cx.ptr, cx.len, &written, &mac, mac_len);
+    ret = aegis.aegis256x4_state_encrypt_detached_final(&st, &mac, mac_len);
     try testing.expectEqual(ret, 0);
-    try testing.expectEqual(cx.len, 0);
 
     try testing.expectEqualSlices(u8, &c, &c2);
     try testing.expectEqualSlices(u8, &mac, &mac2);
