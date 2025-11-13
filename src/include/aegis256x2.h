@@ -281,7 +281,7 @@ void aegis256x2_decrypt_unauthenticated(uint8_t *m, const uint8_t *c, size_t cle
  *
  * st_: state to initialize
  * k: key input buffer (32 bytes)
- * npub: nonce input buffer (32 bytes)
+ * npub: nonce input buffer (32 bytes) - Can be set to `NULL` to use an all-zero nonce
  *
  * - The same key MUST NOT be used both for MAC and encryption.
  * - If the key is secret, the MAC is secure against forgery.

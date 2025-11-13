@@ -747,8 +747,9 @@ state_decrypt_detached_final(aegis128x2_state *st_, uint8_t *m, size_t mlen_max,
 static void
 state_mac_init(aegis128x2_mac_state *st_, const uint8_t *npub, const uint8_t *k)
 {
-    aegis_blocks                 blocks;
-    _aegis128x2_mac_state *const st =
+    aegis_blocks                    blocks;
+    CRYPTO_ALIGN(ALIGNMENT) uint8_t zero_nonce[16];
+    _aegis128x2_mac_state *const    st =
         (_aegis128x2_mac_state *) ((((uintptr_t) &st_->opaque) + (ALIGNMENT - 1)) &
                                    ~(uintptr_t) (ALIGNMENT - 1));
 
@@ -756,6 +757,11 @@ state_mac_init(aegis128x2_mac_state *st_, const uint8_t *npub, const uint8_t *k)
     st->pos = 0;
 
     memcpy(blocks, st->blocks, sizeof blocks);
+
+    if (npub == NULL) {
+        memset(zero_nonce, 0, sizeof zero_nonce);
+        npub = zero_nonce;
+    }
 
     aegis128x2_init(k, npub, blocks);
 
