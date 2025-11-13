@@ -332,19 +332,19 @@ test "aegis-128l - incremental decryption" {
 
     aegis.aegis128l_state_init(&st, ad.ptr, ad.len, &nonce, &key);
 
-    ret = aegis.aegis128l_state_decrypt_detached_update(&st, mx.ptr, mx.len, &written, c0.ptr, c0.len);
+    ret = aegis.aegis128l_state_decrypt_update(&st, mx.ptr, mx.len, &written, c0.ptr, c0.len);
     try testing.expectEqual(ret, 0);
     mx = mx[written..];
 
-    ret = aegis.aegis128l_state_decrypt_detached_update(&st, mx.ptr, mx.len, &written, c1.ptr, c1.len);
+    ret = aegis.aegis128l_state_decrypt_update(&st, mx.ptr, mx.len, &written, c1.ptr, c1.len);
     try testing.expectEqual(ret, 0);
     mx = mx[written..];
 
-    ret = aegis.aegis128l_state_decrypt_detached_update(&st, mx.ptr, mx.len, &written, c2.ptr, c2.len);
+    ret = aegis.aegis128l_state_decrypt_update(&st, mx.ptr, mx.len, &written, c2.ptr, c2.len);
     try testing.expectEqual(ret, 0);
     mx = mx[written..];
 
-    ret = aegis.aegis128l_state_decrypt_detached_final(&st, mx.ptr, mx.len, &written, &mac, mac.len);
+    ret = aegis.aegis128l_state_decrypt_final(&st, mx.ptr, mx.len, &written, &mac, mac.len);
     try testing.expectEqual(ret, 0);
     mx = mx[written..];
 
@@ -398,19 +398,19 @@ test "aegis-256 - incremental decryption" {
 
     aegis.aegis256_state_init(&st, ad.ptr, ad.len, &nonce, &key);
 
-    ret = aegis.aegis256_state_decrypt_detached_update(&st, mx.ptr, mx.len, &written, c0.ptr, c0.len);
+    ret = aegis.aegis256_state_decrypt_update(&st, mx.ptr, mx.len, &written, c0.ptr, c0.len);
     try testing.expectEqual(ret, 0);
     mx = mx[written..];
 
-    ret = aegis.aegis256_state_decrypt_detached_update(&st, mx.ptr, mx.len, &written, c1.ptr, c1.len);
+    ret = aegis.aegis256_state_decrypt_update(&st, mx.ptr, mx.len, &written, c1.ptr, c1.len);
     try testing.expectEqual(ret, 0);
     mx = mx[written..];
 
-    ret = aegis.aegis256_state_decrypt_detached_update(&st, mx.ptr, mx.len, &written, c2.ptr, c2.len);
+    ret = aegis.aegis256_state_decrypt_update(&st, mx.ptr, mx.len, &written, c2.ptr, c2.len);
     try testing.expectEqual(ret, 0);
     mx = mx[written..];
 
-    ret = aegis.aegis256_state_decrypt_detached_final(&st, mx.ptr, mx.len, &written, &mac, mac.len);
+    ret = aegis.aegis256_state_decrypt_final(&st, mx.ptr, mx.len, &written, &mac, mac.len);
     try testing.expectEqual(ret, 0);
     mx = mx[written..];
 
@@ -1312,11 +1312,11 @@ test "aegis-128l - streaming decryption with wrong MAC fails" {
     var mx: []u8 = &msg2;
 
     aegis.aegis128l_state_init(&st, &ad, ad.len, &nonce, &key);
-    ret = aegis.aegis128l_state_decrypt_detached_update(&st, mx.ptr, mx.len, &written, &c, c.len);
+    ret = aegis.aegis128l_state_decrypt_update(&st, mx.ptr, mx.len, &written, &c, c.len);
     try testing.expectEqual(ret, 0);
     mx = mx[written..];
 
-    ret = aegis.aegis128l_state_decrypt_detached_final(&st, mx.ptr, mx.len, &written, &mac, mac_len);
+    ret = aegis.aegis128l_state_decrypt_final(&st, mx.ptr, mx.len, &written, &mac, mac_len);
     try testing.expectEqual(ret, -1);
 }
 
@@ -1348,11 +1348,11 @@ test "aegis-256 - streaming decryption with wrong MAC fails" {
     var mx: []u8 = &msg2;
 
     aegis.aegis256_state_init(&st, &ad, ad.len, &nonce, &key);
-    ret = aegis.aegis256_state_decrypt_detached_update(&st, mx.ptr, mx.len, &written, &c, c.len);
+    ret = aegis.aegis256_state_decrypt_update(&st, mx.ptr, mx.len, &written, &c, c.len);
     try testing.expectEqual(ret, 0);
     mx = mx[written..];
 
-    ret = aegis.aegis256_state_decrypt_detached_final(&st, mx.ptr, mx.len, &written, &mac, mac_len);
+    ret = aegis.aegis256_state_decrypt_final(&st, mx.ptr, mx.len, &written, &mac, mac_len);
     try testing.expectEqual(ret, -1);
 }
 
@@ -1604,14 +1604,14 @@ test "aegis-128l - streaming decryption with written validation" {
         while (cx_src.len > 0) {
             const chunk_len = @min(chunk_size, cx_src.len);
             const chunk = cx_src[0..chunk_len];
-            ret = aegis.aegis128l_state_decrypt_detached_update(&st, mx.ptr, mx.len, &written, chunk.ptr, chunk_len);
+            ret = aegis.aegis128l_state_decrypt_update(&st, mx.ptr, mx.len, &written, chunk.ptr, chunk_len);
             try testing.expectEqual(ret, 0);
             try testing.expectEqual(written, chunk_len);
             mx = mx[written..];
             cx_src = cx_src[chunk_len..];
         }
 
-        ret = aegis.aegis128l_state_decrypt_detached_final(&st, mx.ptr, mx.len, &written, &mac, mac_len);
+        ret = aegis.aegis128l_state_decrypt_final(&st, mx.ptr, mx.len, &written, &mac, mac_len);
         try testing.expectEqual(ret, 0);
         try testing.expectEqual(mx.len, 0);
 
@@ -1657,14 +1657,14 @@ test "aegis-256 - streaming decryption with written validation" {
         while (cx_src.len > 0) {
             const chunk_len = @min(chunk_size, cx_src.len);
             const chunk = cx_src[0..chunk_len];
-            ret = aegis.aegis256_state_decrypt_detached_update(&st, mx.ptr, mx.len, &written, chunk.ptr, chunk_len);
+            ret = aegis.aegis256_state_decrypt_update(&st, mx.ptr, mx.len, &written, chunk.ptr, chunk_len);
             try testing.expectEqual(ret, 0);
             try testing.expectEqual(written, chunk_len);
             mx = mx[written..];
             cx_src = cx_src[chunk_len..];
         }
 
-        ret = aegis.aegis256_state_decrypt_detached_final(&st, mx.ptr, mx.len, &written, &mac, mac_len);
+        ret = aegis.aegis256_state_decrypt_final(&st, mx.ptr, mx.len, &written, &mac, mac_len);
         try testing.expectEqual(ret, 0);
         try testing.expectEqual(mx.len, 0);
 
@@ -1710,14 +1710,14 @@ test "aegis-128x2 - streaming decryption with written validation" {
         while (cx_src.len > 0) {
             const chunk_len = @min(chunk_size, cx_src.len);
             const chunk = cx_src[0..chunk_len];
-            ret = aegis.aegis128x2_state_decrypt_detached_update(&st, mx.ptr, mx.len, &written, chunk.ptr, chunk_len);
+            ret = aegis.aegis128x2_state_decrypt_update(&st, mx.ptr, mx.len, &written, chunk.ptr, chunk_len);
             try testing.expectEqual(ret, 0);
             try testing.expectEqual(written, chunk_len);
             mx = mx[written..];
             cx_src = cx_src[chunk_len..];
         }
 
-        ret = aegis.aegis128x2_state_decrypt_detached_final(&st, mx.ptr, mx.len, &written, &mac, mac_len);
+        ret = aegis.aegis128x2_state_decrypt_final(&st, mx.ptr, mx.len, &written, &mac, mac_len);
         try testing.expectEqual(ret, 0);
         try testing.expectEqual(mx.len, 0);
 
@@ -1763,14 +1763,14 @@ test "aegis-128x4 - streaming decryption with written validation" {
         while (cx_src.len > 0) {
             const chunk_len = @min(chunk_size, cx_src.len);
             const chunk = cx_src[0..chunk_len];
-            ret = aegis.aegis128x4_state_decrypt_detached_update(&st, mx.ptr, mx.len, &written, chunk.ptr, chunk_len);
+            ret = aegis.aegis128x4_state_decrypt_update(&st, mx.ptr, mx.len, &written, chunk.ptr, chunk_len);
             try testing.expectEqual(ret, 0);
             try testing.expectEqual(written, chunk_len);
             mx = mx[written..];
             cx_src = cx_src[chunk_len..];
         }
 
-        ret = aegis.aegis128x4_state_decrypt_detached_final(&st, mx.ptr, mx.len, &written, &mac, mac_len);
+        ret = aegis.aegis128x4_state_decrypt_final(&st, mx.ptr, mx.len, &written, &mac, mac_len);
         try testing.expectEqual(ret, 0);
         try testing.expectEqual(mx.len, 0);
 
@@ -1816,14 +1816,14 @@ test "aegis-256x2 - streaming decryption with written validation" {
         while (cx_src.len > 0) {
             const chunk_len = @min(chunk_size, cx_src.len);
             const chunk = cx_src[0..chunk_len];
-            ret = aegis.aegis256x2_state_decrypt_detached_update(&st, mx.ptr, mx.len, &written, chunk.ptr, chunk_len);
+            ret = aegis.aegis256x2_state_decrypt_update(&st, mx.ptr, mx.len, &written, chunk.ptr, chunk_len);
             try testing.expectEqual(ret, 0);
             try testing.expectEqual(written, chunk_len);
             mx = mx[written..];
             cx_src = cx_src[chunk_len..];
         }
 
-        ret = aegis.aegis256x2_state_decrypt_detached_final(&st, mx.ptr, mx.len, &written, &mac, mac_len);
+        ret = aegis.aegis256x2_state_decrypt_final(&st, mx.ptr, mx.len, &written, &mac, mac_len);
         try testing.expectEqual(ret, 0);
         try testing.expectEqual(mx.len, 0);
 
@@ -1869,14 +1869,14 @@ test "aegis-256x4 - streaming decryption with written validation" {
         while (cx_src.len > 0) {
             const chunk_len = @min(chunk_size, cx_src.len);
             const chunk = cx_src[0..chunk_len];
-            ret = aegis.aegis256x4_state_decrypt_detached_update(&st, mx.ptr, mx.len, &written, chunk.ptr, chunk_len);
+            ret = aegis.aegis256x4_state_decrypt_update(&st, mx.ptr, mx.len, &written, chunk.ptr, chunk_len);
             try testing.expectEqual(ret, 0);
             try testing.expectEqual(written, chunk_len);
             mx = mx[written..];
             cx_src = cx_src[chunk_len..];
         }
 
-        ret = aegis.aegis256x4_state_decrypt_detached_final(&st, mx.ptr, mx.len, &written, &mac, mac_len);
+        ret = aegis.aegis256x4_state_decrypt_final(&st, mx.ptr, mx.len, &written, &mac, mac_len);
         try testing.expectEqual(ret, 0);
         try testing.expectEqual(mx.len, 0);
 

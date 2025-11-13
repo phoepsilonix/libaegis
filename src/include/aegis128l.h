@@ -184,8 +184,8 @@ int aegis128l_state_encrypt_final(aegis128l_state *st_, uint8_t *mac, size_t mac
  *
  * Return 0 on success, -1 on failure.
  */
-int aegis128l_state_decrypt_detached_update(aegis128l_state *st_, uint8_t *m, size_t mlen_max,
-                                            size_t *written, const uint8_t *c, size_t clen)
+int aegis128l_state_decrypt_update(aegis128l_state *st_, uint8_t *m, size_t mlen_max,
+                                   size_t *written, const uint8_t *c, size_t clen)
     __attribute__((warn_unused_result));
 
 /*
@@ -204,8 +204,8 @@ int aegis128l_state_decrypt_detached_update(aegis128l_state *st_, uint8_t *m, si
  *
  * Return 0 if the tag is valid, -1 otherwise.
  */
-int aegis128l_state_decrypt_detached_final(aegis128l_state *st_, uint8_t *m, size_t mlen_max,
-                                           size_t *written, const uint8_t *mac, size_t maclen)
+int aegis128l_state_decrypt_final(aegis128l_state *st_, uint8_t *m, size_t mlen_max,
+                                  size_t *written, const uint8_t *mac, size_t maclen)
     __attribute__((warn_unused_result));
 
 /*
