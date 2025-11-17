@@ -26,9 +26,9 @@ Note that the compiler makes a difference. Zig (or a recent `clang` with target-
 zig build -Drelease
 ```
 
-To build the library as a shared object using the `-Dlink-mode` option:
+To build the library as a shared object using the `-Dlinkage` option:
 ```sh
-zig build -Dlink-mode=dynamic -Drelease
+zig build -Dlinkage=dynamic -Drelease
 ```
 
 The library and headers are installed in the `zig-out` folder.
