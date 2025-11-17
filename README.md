@@ -27,6 +27,7 @@ zig build -Drelease
 ```
 
 To build the library as a shared object using the `-Dlinkage` option:
+
 ```sh
 zig build -Dlinkage=dynamic -Drelease
 ```
@@ -58,6 +59,7 @@ cd build
 cmake -DCMAKE_INSTALL_PREFIX=/install/prefix ..
 make install
 ```
+
 To build the library as a shared library, add `-DBUILD_SHARED_LIBS=On`.
 
 To favor performance over side-channel mitigations on devices without hardware acceleration, add `-DFAVOR_PERFORMANCE`.
