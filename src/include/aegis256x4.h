@@ -74,7 +74,7 @@ int aegis256x4_encrypt_detached(uint8_t *c, uint8_t *mac, size_t maclen, const u
                                 const uint8_t *k);
 
 /*
- * Decrypt a message with AEGIS in one shot mode, returning the tag and the ciphertext separately.
+ * Decrypt a message with AEGIS in one shot mode with a detached tag.
  *
  * m: plaintext output buffer
  * c: ciphertext input buffer
