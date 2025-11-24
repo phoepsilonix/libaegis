@@ -23,7 +23,11 @@
 #        pragma clang attribute push(__attribute__((target("neon,crypto,aes,sha3"))), \
                                      apply_to = function)
 #    elif defined(__GNUC__)
-#        pragma GCC target("+simd+crypto+sha3")
+#        if __GNUC__ < 14
+#            pragma GCC target("arch=armv8.2-a+simd+crypto+sha3")
+#        else
+#            pragma GCC target("+simd+crypto+sha3")
+#        endif
 #    endif
 
 #    define AES_BLOCK_LENGTH 16
