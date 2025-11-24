@@ -41,11 +41,11 @@ jobs:
             arch: x86_64
             cc: clang
           - name: "Linux aarch64 GCC"
-            runner: ubuntu-24.04-arm64
+            runner: ubuntu-24.04-arm
             arch: aarch64
             cc: gcc
           - name: "Linux aarch64 Clang"
-            runner: ubuntu-24.04-arm64
+            runner: ubuntu-24.04-arm
             arch: aarch64
             cc: clang
 
