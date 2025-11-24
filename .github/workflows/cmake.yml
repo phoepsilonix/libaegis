@@ -16,12 +16,28 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - name: "Linux x86_64 GCC"
+          - name: "Linux x86_64 GCC (ubuntu-latest)"
             runner: ubuntu-latest
             arch: x86_64
             cc: gcc
-          - name: "Linux x86_64 Clang"
+          - name: "Linux x86_64 Clang (ubuntu-latest)"
             runner: ubuntu-latest
+            arch: x86_64
+            cc: clang
+          - name: "Linux x86_64 GCC (ubuntu-24.04)"
+            runner: ubuntu-24.04
+            arch: x86_64
+            cc: gcc
+          - name: "Linux x86_64 Clang (ubuntu-24.04)"
+            runner: ubuntu-24.04
+            arch: x86_64
+            cc: clang
+          - name: "Linux x86_64 GCC (ubuntu-22.04)"
+            runner: ubuntu-22.04
+            arch: x86_64
+            cc: gcc
+          - name: "Linux x86_64 Clang (ubuntu-22.04)"
+            runner: ubuntu-22.04
             arch: x86_64
             cc: clang
           - name: "Linux aarch64 GCC"
