@@ -11,13 +11,43 @@ env:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: "Linux x86_64 GCC"
+            runner: ubuntu-latest
+            arch: x86_64
+            cc: gcc
+          - name: "Linux x86_64 Clang"
+            runner: ubuntu-latest
+            arch: x86_64
+            cc: clang
+          - name: "Linux aarch64 GCC"
+            runner: ubuntu-24.04-arm64
+            arch: aarch64
+            cc: gcc
+          - name: "Linux aarch64 Clang"
+            runner: ubuntu-24.04-arm64
+            arch: aarch64
+            cc: clang
+
+    name: ${{ matrix.name }}
 
     steps:
     - uses: actions/checkout@v4
 
+    - name: Install Clang
+      if: matrix.cc == 'clang'
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y clang
+
     - name: Configure CMake
-      run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
+      run: |
+        CC=${{ matrix.cc }} cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
 
     - name: Build
       run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}
+      
