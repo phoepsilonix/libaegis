@@ -15,10 +15,9 @@ pub fn build(b: *std.Build) void {
             .target = target,
             .optimize = optimize,
             .strip = true,
+            .link_libc = true,
         }),
     });
-
-    lib.linkLibC();
 
     const lib_options = b.addOptions();
 
@@ -30,7 +29,7 @@ pub fn build(b: *std.Build) void {
 
     lib_options.addOption(bool, "benchmark", with_benchmark);
 
-    lib.addIncludePath(b.path("src/include"));
+    lib.root_module.addIncludePath(b.path("src/include"));
 
     const source_files = &.{
         "src/aegis128l/aegis128l_aesni.c",
@@ -81,7 +80,7 @@ pub fn build(b: *std.Build) void {
         "src/common/softaes.c",
     };
 
-    lib.addCSourceFiles(.{ .files = source_files });
+    lib.root_module.addCSourceFiles(.{ .files = source_files });
 
     // This declares intent for the executable to be installed into the
     // standard location when the user invokes the "install" step (the default
@@ -104,8 +103,8 @@ pub fn build(b: *std.Build) void {
         }),
     });
 
-    main_tests.addIncludePath(b.path("src/include"));
-    main_tests.linkLibrary(lib);
+    main_tests.root_module.addIncludePath(b.path("src/include"));
+    main_tests.root_module.linkLibrary(lib);
 
     const run_main_tests = b.addRunArtifact(main_tests);
 
@@ -121,8 +120,8 @@ pub fn build(b: *std.Build) void {
                 .optimize = optimize,
             }),
         });
-        benchmark.addIncludePath(b.path("src/include"));
-        benchmark.linkLibrary(lib);
+        benchmark.root_module.addIncludePath(b.path("src/include"));
+        benchmark.root_module.linkLibrary(lib);
         b.installArtifact(benchmark);
     }
 }
