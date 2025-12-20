@@ -32,6 +32,9 @@ jobs:
           zig build -Dtarget=aarch64-macos -Dcpu=baseline
           zig build -Dtarget=powerpc64le-linux
 
+          zig build -Dtarget=x86_64-freebsd
+          zig build -Dtarget=x86_64-netbsd
+
           zig build -Dtarget=x86_64-linux -Dcpu=znver4
           zig build -Dtarget=aarch64-linux -Dcpu=ampere1a+aes+crypto
           zig build -Dtarget=x86_64-windows -Dcpu=znver4
