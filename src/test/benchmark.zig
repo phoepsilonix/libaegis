@@ -1,5 +1,6 @@
 const aegis = @cImport(@cInclude("aegis.h"));
 const std = @import("std");
+const Io = std.Io;
 const mem = std.mem;
 const random = std.crypto.random;
 const time = std.time;
@@ -8,7 +9,7 @@ const Timer = std.time.Timer;
 const msg_len: usize = 16384;
 const iterations = 100000;
 
-fn bench_aegis256() !void {
+fn bench_aegis256(stdout: *Io.Writer) !void {
     var key: [aegis.aegis256_KEYBYTES]u8 = undefined;
     var nonce: [aegis.aegis256_NPUBBYTES]u8 = undefined;
     var buf: [msg_len + aegis.aegis256_ABYTES_MIN]u8 = undefined;
@@ -36,14 +37,10 @@ fn bench_aegis256() !void {
     const bits: f128 = @floatFromInt(@as(u128, msg_len) * iterations * 8);
     const elapsed_s = @as(f128, @floatFromInt(end - start)) / time.ns_per_s;
     const throughput = @as(f64, @floatCast(bits / (elapsed_s * 1000 * 1000)));
-    var stdout_buffer: [1024]u8 = undefined;
-    var stdout_writer = std.fs.File.stdout().writer(&stdout_buffer);
-    const stdout = &stdout_writer.interface;
     try stdout.print("AEGIS-256\t{d:10.2} Mb/s\n", .{throughput});
-    try stdout.flush();
 }
 
-fn bench_aegis256x2() !void {
+fn bench_aegis256x2(stdout: *Io.Writer) !void {
     var key: [aegis.aegis256x2_KEYBYTES]u8 = undefined;
     var nonce: [aegis.aegis256x2_NPUBBYTES]u8 = undefined;
     var buf: [msg_len + aegis.aegis256x2_ABYTES_MIN]u8 = undefined;
@@ -71,14 +68,10 @@ fn bench_aegis256x2() !void {
     const bits: f128 = @floatFromInt(@as(u128, msg_len) * iterations * 8);
     const elapsed_s = @as(f128, @floatFromInt(end - start)) / time.ns_per_s;
     const throughput = @as(f64, @floatCast(bits / (elapsed_s * 1000 * 1000)));
-    var stdout_buffer: [1024]u8 = undefined;
-    var stdout_writer = std.fs.File.stdout().writer(&stdout_buffer);
-    const stdout = &stdout_writer.interface;
     try stdout.print("AEGIS-256X2\t{d:10.2} Mb/s\n", .{throughput});
-    try stdout.flush();
 }
 
-fn bench_aegis256x4() !void {
+fn bench_aegis256x4(stdout: *Io.Writer) !void {
     var key: [aegis.aegis256x4_KEYBYTES]u8 = undefined;
     var nonce: [aegis.aegis256x4_NPUBBYTES]u8 = undefined;
     var buf: [msg_len + aegis.aegis256x4_ABYTES_MIN]u8 = undefined;
@@ -106,14 +99,10 @@ fn bench_aegis256x4() !void {
     const bits: f128 = @floatFromInt(@as(u128, msg_len) * iterations * 8);
     const elapsed_s = @as(f128, @floatFromInt(end - start)) / time.ns_per_s;
     const throughput = @as(f64, @floatCast(bits / (elapsed_s * 1000 * 1000)));
-    var stdout_buffer: [1024]u8 = undefined;
-    var stdout_writer = std.fs.File.stdout().writer(&stdout_buffer);
-    const stdout = &stdout_writer.interface;
     try stdout.print("AEGIS-256X4\t{d:10.2} Mb/s\n", .{throughput});
-    try stdout.flush();
 }
 
-fn bench_aegis128l() !void {
+fn bench_aegis128l(stdout: *Io.Writer) !void {
     var key: [aegis.aegis128l_KEYBYTES]u8 = undefined;
     var nonce: [aegis.aegis128l_NPUBBYTES]u8 = undefined;
     var buf: [msg_len + aegis.aegis128l_ABYTES_MIN]u8 = undefined;
@@ -141,14 +130,10 @@ fn bench_aegis128l() !void {
     const bits: f128 = @floatFromInt(@as(u128, msg_len) * iterations * 8);
     const elapsed_s = @as(f128, @floatFromInt(end - start)) / time.ns_per_s;
     const throughput = @as(f64, @floatCast(bits / (elapsed_s * 1000 * 1000)));
-    var stdout_buffer: [1024]u8 = undefined;
-    var stdout_writer = std.fs.File.stdout().writer(&stdout_buffer);
-    const stdout = &stdout_writer.interface;
     try stdout.print("AEGIS-128L\t{d:10.2} Mb/s\n", .{throughput});
-    try stdout.flush();
 }
 
-fn bench_aegis128x2() !void {
+fn bench_aegis128x2(stdout: *Io.Writer) !void {
     var key: [aegis.aegis128x2_KEYBYTES]u8 = undefined;
     var nonce: [aegis.aegis128x2_NPUBBYTES]u8 = undefined;
     var buf: [msg_len + aegis.aegis128x2_ABYTES_MIN]u8 = undefined;
@@ -176,14 +161,10 @@ fn bench_aegis128x2() !void {
     const bits: f128 = @floatFromInt(@as(u128, msg_len) * iterations * 8);
     const elapsed_s = @as(f128, @floatFromInt(end - start)) / time.ns_per_s;
     const throughput = @as(f64, @floatCast(bits / (elapsed_s * 1000 * 1000)));
-    var stdout_buffer: [1024]u8 = undefined;
-    var stdout_writer = std.fs.File.stdout().writer(&stdout_buffer);
-    const stdout = &stdout_writer.interface;
     try stdout.print("AEGIS-128X2\t{d:10.2} Mb/s\n", .{throughput});
-    try stdout.flush();
 }
 
-fn bench_aegis128x4() !void {
+fn bench_aegis128x4(stdout: *Io.Writer) !void {
     var key: [aegis.aegis128x4_KEYBYTES]u8 = undefined;
     var nonce: [aegis.aegis128x4_NPUBBYTES]u8 = undefined;
     var buf: [msg_len + aegis.aegis128x4_ABYTES_MIN]u8 = undefined;
@@ -211,14 +192,10 @@ fn bench_aegis128x4() !void {
     const bits: f128 = @floatFromInt(@as(u128, msg_len) * iterations * 8);
     const elapsed_s = @as(f128, @floatFromInt(end - start)) / time.ns_per_s;
     const throughput = @as(f64, @floatCast(bits / (elapsed_s * 1000 * 1000)));
-    var stdout_buffer: [1024]u8 = undefined;
-    var stdout_writer = std.fs.File.stdout().writer(&stdout_buffer);
-    const stdout = &stdout_writer.interface;
     try stdout.print("AEGIS-128X4\t{d:10.2} Mb/s\n", .{throughput});
-    try stdout.flush();
 }
 
-fn bench_aegis128l_mac() !void {
+fn bench_aegis128l_mac(stdout: *Io.Writer) !void {
     var key: [aegis.aegis128l_KEYBYTES]u8 = undefined;
     var nonce: [aegis.aegis128l_NPUBBYTES]u8 = undefined;
     var buf: [msg_len]u8 = undefined;
@@ -241,14 +218,10 @@ fn bench_aegis128l_mac() !void {
     const bits: f128 = @floatFromInt(@as(u128, msg_len) * iterations * 8);
     const elapsed_s = @as(f128, @floatFromInt(end - start)) / time.ns_per_s;
     const throughput = @as(f64, @floatCast(bits / (elapsed_s * 1000 * 1000)));
-    var stdout_buffer: [1024]u8 = undefined;
-    var stdout_writer = std.fs.File.stdout().writer(&stdout_buffer);
-    const stdout = &stdout_writer.interface;
     try stdout.print("AEGIS-128L MAC\t{d:10.2} Mb/s\n", .{throughput});
-    try stdout.flush();
 }
 
-fn bench_aegis128x2_mac() !void {
+fn bench_aegis128x2_mac(stdout: *Io.Writer) !void {
     var key: [aegis.aegis128x2_KEYBYTES]u8 = undefined;
     var nonce: [aegis.aegis128x2_NPUBBYTES]u8 = undefined;
     var buf: [msg_len]u8 = undefined;
@@ -271,14 +244,10 @@ fn bench_aegis128x2_mac() !void {
     const bits: f128 = @floatFromInt(@as(u128, msg_len) * iterations * 8);
     const elapsed_s = @as(f128, @floatFromInt(end - start)) / time.ns_per_s;
     const throughput = @as(f64, @floatCast(bits / (elapsed_s * 1000 * 1000)));
-    var stdout_buffer: [1024]u8 = undefined;
-    var stdout_writer = std.fs.File.stdout().writer(&stdout_buffer);
-    const stdout = &stdout_writer.interface;
     try stdout.print("AEGIS-128X2 MAC\t{d:10.2} Mb/s\n", .{throughput});
-    try stdout.flush();
 }
 
-fn bench_aegis128x4_mac() !void {
+fn bench_aegis128x4_mac(stdout: *Io.Writer) !void {
     var key: [aegis.aegis128x4_KEYBYTES]u8 = undefined;
     var nonce: [aegis.aegis128x4_NPUBBYTES]u8 = undefined;
     var buf: [msg_len]u8 = undefined;
@@ -302,14 +271,10 @@ fn bench_aegis128x4_mac() !void {
     const bits: f128 = @floatFromInt(@as(u128, msg_len) * iterations * 8);
     const elapsed_s = @as(f128, @floatFromInt(end - start)) / time.ns_per_s;
     const throughput = @as(f64, @floatCast(bits / (elapsed_s * 1000 * 1000)));
-    var stdout_buffer: [1024]u8 = undefined;
-    var stdout_writer = std.fs.File.stdout().writer(&stdout_buffer);
-    const stdout = &stdout_writer.interface;
     try stdout.print("AEGIS-128X4 MAC\t{d:10.2} Mb/s\n", .{throughput});
-    try stdout.flush();
 }
 
-fn bench_aegis256_mac() !void {
+fn bench_aegis256_mac(stdout: *Io.Writer) !void {
     var key: [aegis.aegis256_KEYBYTES]u8 = undefined;
     var nonce: [aegis.aegis256_NPUBBYTES]u8 = undefined;
     var buf: [msg_len]u8 = undefined;
@@ -332,14 +297,10 @@ fn bench_aegis256_mac() !void {
     const bits: f128 = @floatFromInt(@as(u128, msg_len) * iterations * 8);
     const elapsed_s = @as(f128, @floatFromInt(end - start)) / time.ns_per_s;
     const throughput = @as(f64, @floatCast(bits / (elapsed_s * 1000 * 1000)));
-    var stdout_buffer: [1024]u8 = undefined;
-    var stdout_writer = std.fs.File.stdout().writer(&stdout_buffer);
-    const stdout = &stdout_writer.interface;
     try stdout.print("AEGIS-256 MAC\t{d:10.2} Mb/s\n", .{throughput});
-    try stdout.flush();
 }
 
-fn bench_aegis256x2_mac() !void {
+fn bench_aegis256x2_mac(stdout: *Io.Writer) !void {
     var key: [aegis.aegis256x2_KEYBYTES]u8 = undefined;
     var nonce: [aegis.aegis256x2_NPUBBYTES]u8 = undefined;
     var buf: [msg_len]u8 = undefined;
@@ -363,14 +324,10 @@ fn bench_aegis256x2_mac() !void {
     const bits: f128 = @floatFromInt(@as(u128, msg_len) * iterations * 8);
     const elapsed_s = @as(f128, @floatFromInt(end - start)) / time.ns_per_s;
     const throughput = @as(f64, @floatCast(bits / (elapsed_s * 1000 * 1000)));
-    var stdout_buffer: [1024]u8 = undefined;
-    var stdout_writer = std.fs.File.stdout().writer(&stdout_buffer);
-    const stdout = &stdout_writer.interface;
     try stdout.print("AEGIS-256X2 MAC\t{d:10.2} Mb/s\n", .{throughput});
-    try stdout.flush();
 }
 
-fn bench_aegis256x4_mac() !void {
+fn bench_aegis256x4_mac(stdout: *Io.Writer) !void {
     var key: [aegis.aegis256x4_KEYBYTES]u8 = undefined;
     var nonce: [aegis.aegis256x2_NPUBBYTES]u8 = undefined;
     var buf: [msg_len]u8 = undefined;
@@ -394,11 +351,7 @@ fn bench_aegis256x4_mac() !void {
     const bits: f128 = @floatFromInt(@as(u128, msg_len) * iterations * 8);
     const elapsed_s = @as(f128, @floatFromInt(end - start)) / time.ns_per_s;
     const throughput = @as(f64, @floatCast(bits / (elapsed_s * 1000 * 1000)));
-    var stdout_buffer: [1024]u8 = undefined;
-    var stdout_writer = std.fs.File.stdout().writer(&stdout_buffer);
-    const stdout = &stdout_writer.interface;
     try stdout.print("AEGIS-256X4 MAC\t{d:10.2} Mb/s\n", .{throughput});
-    try stdout.flush();
 }
 
 pub fn main() !void {
@@ -406,17 +359,24 @@ pub fn main() !void {
         return error.InitFailed;
     }
 
-    try bench_aegis256();
-    try bench_aegis256x2();
-    try bench_aegis256x4();
-    try bench_aegis128l();
-    try bench_aegis128x2();
-    try bench_aegis128x4();
+    const io = Io.Threaded.global_single_threaded.io();
+    var stdout_buffer: [0x100]u8 = undefined;
+    var stdout_writer = Io.File.stdout().writer(io, &stdout_buffer);
+    const stdout = &stdout_writer.interface;
 
-    try bench_aegis128l_mac();
-    try bench_aegis128x2_mac();
-    try bench_aegis128x4_mac();
-    try bench_aegis256_mac();
-    try bench_aegis256x2_mac();
-    try bench_aegis256x4_mac();
+    try bench_aegis256(stdout);
+    try bench_aegis256x2(stdout);
+    try bench_aegis256x4(stdout);
+    try bench_aegis128l(stdout);
+    try bench_aegis128x2(stdout);
+    try bench_aegis128x4(stdout);
+
+    try bench_aegis128l_mac(stdout);
+    try bench_aegis128x2_mac(stdout);
+    try bench_aegis128x4_mac(stdout);
+    try bench_aegis256_mac(stdout);
+    try bench_aegis256x2_mac(stdout);
+    try bench_aegis256x4_mac(stdout);
+
+    try stdout.flush();
 }
