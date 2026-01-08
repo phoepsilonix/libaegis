@@ -2,21 +2,22 @@ const aegis = @cImport(@cInclude("aegis.h"));
 const std = @import("std");
 const Io = std.Io;
 const mem = std.mem;
-const random = std.crypto.random;
 const time = std.time;
 const Timer = std.time.Timer;
 
 const msg_len: usize = 16384;
 const iterations = 100000;
 
+const io = Io.Threaded.global_single_threaded.io();
+
 fn bench_aegis256(stdout: *Io.Writer) !void {
     var key: [aegis.aegis256_KEYBYTES]u8 = undefined;
     var nonce: [aegis.aegis256_NPUBBYTES]u8 = undefined;
     var buf: [msg_len + aegis.aegis256_ABYTES_MIN]u8 = undefined;
 
-    random.bytes(&key);
-    random.bytes(&nonce);
-    random.bytes(&buf);
+    io.random(&key);
+    io.random(&nonce);
+    io.random(&buf);
 
     var timer = try Timer.start();
     const start = timer.lap();
@@ -45,9 +46,9 @@ fn bench_aegis256x2(stdout: *Io.Writer) !void {
     var nonce: [aegis.aegis256x2_NPUBBYTES]u8 = undefined;
     var buf: [msg_len + aegis.aegis256x2_ABYTES_MIN]u8 = undefined;
 
-    random.bytes(&key);
-    random.bytes(&nonce);
-    random.bytes(&buf);
+    io.random(&key);
+    io.random(&nonce);
+    io.random(&buf);
 
     var timer = try Timer.start();
     const start = timer.lap();
@@ -76,9 +77,9 @@ fn bench_aegis256x4(stdout: *Io.Writer) !void {
     var nonce: [aegis.aegis256x4_NPUBBYTES]u8 = undefined;
     var buf: [msg_len + aegis.aegis256x4_ABYTES_MIN]u8 = undefined;
 
-    random.bytes(&key);
-    random.bytes(&nonce);
-    random.bytes(&buf);
+    io.random(&key);
+    io.random(&nonce);
+    io.random(&buf);
 
     var timer = try Timer.start();
     const start = timer.lap();
@@ -107,9 +108,9 @@ fn bench_aegis128l(stdout: *Io.Writer) !void {
     var nonce: [aegis.aegis128l_NPUBBYTES]u8 = undefined;
     var buf: [msg_len + aegis.aegis128l_ABYTES_MIN]u8 = undefined;
 
-    random.bytes(&key);
-    random.bytes(&nonce);
-    random.bytes(&buf);
+    io.random(&key);
+    io.random(&nonce);
+    io.random(&buf);
 
     var timer = try Timer.start();
     const start = timer.lap();
@@ -138,9 +139,9 @@ fn bench_aegis128x2(stdout: *Io.Writer) !void {
     var nonce: [aegis.aegis128x2_NPUBBYTES]u8 = undefined;
     var buf: [msg_len + aegis.aegis128x2_ABYTES_MIN]u8 = undefined;
 
-    random.bytes(&key);
-    random.bytes(&nonce);
-    random.bytes(&buf);
+    io.random(&key);
+    io.random(&nonce);
+    io.random(&buf);
 
     var timer = try Timer.start();
     const start = timer.lap();
@@ -169,9 +170,9 @@ fn bench_aegis128x4(stdout: *Io.Writer) !void {
     var nonce: [aegis.aegis128x4_NPUBBYTES]u8 = undefined;
     var buf: [msg_len + aegis.aegis128x4_ABYTES_MIN]u8 = undefined;
 
-    random.bytes(&key);
-    random.bytes(&nonce);
-    random.bytes(&buf);
+    io.random(&key);
+    io.random(&nonce);
+    io.random(&buf);
 
     var timer = try Timer.start();
     const start = timer.lap();
@@ -201,9 +202,9 @@ fn bench_aegis128l_mac(stdout: *Io.Writer) !void {
     var buf: [msg_len]u8 = undefined;
     var st: aegis.aegis128l_mac_state = undefined;
 
-    random.bytes(&key);
-    random.bytes(&nonce);
-    random.bytes(&buf);
+    io.random(&key);
+    io.random(&nonce);
+    io.random(&buf);
     aegis.aegis128l_mac_init(&st, &key, &nonce);
 
     var timer = try Timer.start();
@@ -227,9 +228,9 @@ fn bench_aegis128x2_mac(stdout: *Io.Writer) !void {
     var buf: [msg_len]u8 = undefined;
     var st: aegis.aegis128x2_mac_state = undefined;
 
-    random.bytes(&key);
-    random.bytes(&nonce);
-    random.bytes(&buf);
+    io.random(&key);
+    io.random(&nonce);
+    io.random(&buf);
     aegis.aegis128x2_mac_init(&st, &key, &nonce);
 
     var timer = try Timer.start();
@@ -253,9 +254,9 @@ fn bench_aegis128x4_mac(stdout: *Io.Writer) !void {
     var buf: [msg_len]u8 = undefined;
     var st0: aegis.aegis128x4_mac_state = undefined;
 
-    random.bytes(&key);
-    random.bytes(&nonce);
-    random.bytes(&buf);
+    io.random(&key);
+    io.random(&nonce);
+    io.random(&buf);
     aegis.aegis128x4_mac_init(&st0, &key, &nonce);
 
     var timer = try Timer.start();
@@ -280,9 +281,9 @@ fn bench_aegis256_mac(stdout: *Io.Writer) !void {
     var buf: [msg_len]u8 = undefined;
     var st: aegis.aegis256_mac_state = undefined;
 
-    random.bytes(&key);
-    random.bytes(&nonce);
-    random.bytes(&buf);
+    io.random(&key);
+    io.random(&nonce);
+    io.random(&buf);
     aegis.aegis256_mac_init(&st, &key, &nonce);
 
     var timer = try Timer.start();
@@ -306,9 +307,9 @@ fn bench_aegis256x2_mac(stdout: *Io.Writer) !void {
     var buf: [msg_len]u8 = undefined;
     var st0: aegis.aegis256x2_mac_state = undefined;
 
-    random.bytes(&key);
-    random.bytes(&nonce);
-    random.bytes(&buf);
+    io.random(&key);
+    io.random(&nonce);
+    io.random(&buf);
     aegis.aegis256x2_mac_init(&st0, &key, &nonce);
 
     var timer = try Timer.start();
@@ -333,9 +334,9 @@ fn bench_aegis256x4_mac(stdout: *Io.Writer) !void {
     var buf: [msg_len]u8 = undefined;
     var st0: aegis.aegis256x4_mac_state = undefined;
 
-    random.bytes(&key);
-    random.bytes(&nonce);
-    random.bytes(&buf);
+    io.random(&key);
+    io.random(&nonce);
+    io.random(&buf);
     aegis.aegis256x4_mac_init(&st0, &key, &nonce);
 
     var timer = try Timer.start();
@@ -359,7 +360,6 @@ pub fn main() !void {
         return error.InitFailed;
     }
 
-    const io = Io.Threaded.global_single_threaded.io();
     var stdout_buffer: [0x100]u8 = undefined;
     var stdout_writer = Io.File.stdout().writer(io, &stdout_buffer);
     const stdout = &stdout_writer.interface;
