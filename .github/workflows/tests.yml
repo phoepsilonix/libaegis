@@ -22,6 +22,8 @@ jobs:
 
       - name: Install Zig
         uses: mlugg/setup-zig@v2
+        with:
+          version: master
 
       - name: Unit tests
         run: |
