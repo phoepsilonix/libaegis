@@ -120,7 +120,7 @@ test "aegis-128l - incremental encryption" {
     var key: [aegis.aegis256_KEYBYTES]u8 = undefined;
     random.bytes(&key);
 
-    var st: aegis.aegis128l_state = undefined;
+    var st: aegis.aegis128l_state align(32) = undefined;
 
     aegis.aegis128l_state_init(&st, ad.ptr, ad.len, &nonce, &key);
 
@@ -322,7 +322,7 @@ test "aegis-128l - incremental decryption" {
     var ret = aegis.aegis128l_encrypt_detached(c.ptr, &mac, mac_len, msg.ptr, msg.len, ad.ptr, ad.len, &nonce, &key);
     try testing.expectEqual(ret, 0);
 
-    var st: aegis.aegis128l_state = undefined;
+    var st: aegis.aegis128l_state align(32) = undefined;
 
     const c0 = c[0 .. c.len / 3];
     const c1 = c[c.len / 3 .. 2 * c.len / 3];
@@ -624,10 +624,10 @@ test "aegis128l - MAC" {
     const nonce = [_]u8{0} ** 16;
     const msg = [_]u8{ 1, 2, 3 } ** 100;
     const msg2 = [_]u8{ 4, 5, 6, 7, 8 } ** 100 ++ [_]u8{0};
-    var st0: aegis.aegis128l_mac_state = undefined;
+    var st0: aegis.aegis128l_mac_state align(32) = undefined;
     aegis.aegis128l_mac_init(&st0, &key, &nonce);
 
-    var st: aegis.aegis128l_mac_state = undefined;
+    var st: aegis.aegis128l_mac_state align(32) = undefined;
     aegis.aegis128l_mac_state_clone(&st, &st0);
     var ret = aegis.aegis128l_mac_update(&st, &msg, msg.len);
     try testing.expectEqual(ret, 0);
@@ -663,10 +663,10 @@ test "aegis128x2 - MAC" {
     const nonce = [_]u8{0} ** 16;
     const msg = [_]u8{ 1, 2, 3 } ** 100;
     const msg2 = [_]u8{ 4, 5, 6, 7, 8 } ** 100 ++ [_]u8{0};
-    var st0: aegis.aegis128x2_mac_state = undefined;
+    var st0: aegis.aegis128x2_mac_state align(64) = undefined;
     aegis.aegis128x2_mac_init(&st0, &key, &nonce);
 
-    var st: aegis.aegis128x2_mac_state = undefined;
+    var st: aegis.aegis128x2_mac_state align(64) = undefined;
     aegis.aegis128x2_mac_state_clone(&st, &st0);
     var ret = aegis.aegis128x2_mac_update(&st, &msg, msg.len);
     try testing.expectEqual(ret, 0);
@@ -702,10 +702,10 @@ test "aegis128x4 - MAC" {
     const nonce = [_]u8{0} ** 16;
     const msg = [_]u8{ 1, 2, 3 } ** 100 ++ [_]u8{0};
     const msg2 = [_]u8{ 4, 5, 6, 7, 8 } ** 100;
-    var st0: aegis.aegis128x4_mac_state = undefined;
+    var st0: aegis.aegis128x4_mac_state align(64) = undefined;
     aegis.aegis128x4_mac_init(&st0, &key, &nonce);
 
-    var st: aegis.aegis128x4_mac_state = undefined;
+    var st: aegis.aegis128x4_mac_state align(64) = undefined;
     aegis.aegis128x4_mac_state_clone(&st, &st0);
     var ret = aegis.aegis128x4_mac_update(&st, &msg, msg.len);
     try testing.expectEqual(ret, 0);
@@ -743,7 +743,7 @@ test "aegis128l - MAC test vector" {
     for (&msg, 0..) |*byte, i| byte.* = @truncate(i);
     var mac128: [16]u8 = undefined;
     var mac256: [32]u8 = undefined;
-    var st: aegis.aegis128l_mac_state = undefined;
+    var st: aegis.aegis128l_mac_state align(32) = undefined;
     var ret: c_int = undefined;
     aegis.aegis128l_mac_init(&st, &key, &nonce);
     ret = aegis.aegis128l_mac_update(&st, &msg, msg.len);
@@ -772,7 +772,7 @@ test "aegis128x2 - MAC test vector" {
     for (&msg, 0..) |*byte, i| byte.* = @truncate(i);
     var mac128: [16]u8 = undefined;
     var mac256: [32]u8 = undefined;
-    var st: aegis.aegis128x2_mac_state = undefined;
+    var st: aegis.aegis128x2_mac_state align(64) = undefined;
     var ret: c_int = undefined;
     aegis.aegis128x2_mac_init(&st, &key, &nonce);
     ret = aegis.aegis128x2_mac_update(&st, &msg, msg.len);
@@ -801,7 +801,7 @@ test "aegis128x4 - MAC test vector" {
     for (&msg, 0..) |*byte, i| byte.* = @truncate(i);
     var mac128: [16]u8 = undefined;
     var mac256: [32]u8 = undefined;
-    var st: aegis.aegis128x4_mac_state = undefined;
+    var st: aegis.aegis128x4_mac_state align(64) = undefined;
     var ret: c_int = undefined;
     aegis.aegis128x4_mac_init(&st, &key, &nonce);
     ret = aegis.aegis128x4_mac_update(&st, &msg, msg.len);
@@ -859,7 +859,7 @@ test "aegis256x2 - MAC test vector" {
     for (&msg, 0..) |*byte, i| byte.* = @truncate(i);
     var mac128: [16]u8 = undefined;
     var mac256: [32]u8 = undefined;
-    var st: aegis.aegis256x2_mac_state = undefined;
+    var st: aegis.aegis256x2_mac_state align(32) = undefined;
     var ret: c_int = undefined;
     aegis.aegis256x2_mac_init(&st, &key, &nonce);
     ret = aegis.aegis256x2_mac_update(&st, &msg, msg.len);
@@ -888,7 +888,7 @@ test "aegis256x4 - MAC test vector" {
     for (&msg, 0..) |*byte, i| byte.* = @truncate(i);
     var mac128: [16]u8 = undefined;
     var mac256: [32]u8 = undefined;
-    var st: aegis.aegis256x4_mac_state = undefined;
+    var st: aegis.aegis256x4_mac_state align(64) = undefined;
     var ret: c_int = undefined;
     aegis.aegis256x4_mac_init(&st, &key, &nonce);
     ret = aegis.aegis256x4_mac_update(&st, &msg, msg.len);
@@ -1006,7 +1006,7 @@ test "aegis-128l - streaming byte-by-byte" {
     var ret = aegis.aegis128l_encrypt_detached(&c2, &mac2, mac_len, &msg, msg.len, &ad, ad.len, &nonce, &key);
     try testing.expectEqual(ret, 0);
 
-    var st: aegis.aegis128l_state = undefined;
+    var st: aegis.aegis128l_state align(32) = undefined;
     var cx: []u8 = &c;
     aegis.aegis128l_state_init(&st, &ad, ad.len, &nonce, &key);
 
@@ -1093,7 +1093,7 @@ test "aegis-128l - streaming at RATE boundaries" {
         var ret = aegis.aegis128l_encrypt_detached(&c2, &mac2, mac_len, &msg, msg_len, &ad, ad.len, &nonce, &key);
         try testing.expectEqual(ret, 0);
 
-        var st: aegis.aegis128l_state = undefined;
+        var st: aegis.aegis128l_state align(32) = undefined;
         var cx: []u8 = &c;
         var mx_src: []const u8 = &msg;
 
@@ -1200,7 +1200,7 @@ test "aegis-128l - streaming with empty updates" {
     var ret = aegis.aegis128l_encrypt_detached(&c2, &mac2, mac_len, &msg, msg.len, &ad, ad.len, &nonce, &key);
     try testing.expectEqual(ret, 0);
 
-    var st: aegis.aegis128l_state = undefined;
+    var st: aegis.aegis128l_state align(32) = undefined;
     var cx: []u8 = &c;
     aegis.aegis128l_state_init(&st, &ad, ad.len, &nonce, &key);
 
@@ -1305,7 +1305,7 @@ test "aegis-128l - streaming decryption with wrong MAC fails" {
 
     mac[0] ^= 0x01;
 
-    var st: aegis.aegis128l_state = undefined;
+    var st: aegis.aegis128l_state align(32) = undefined;
     var mx: []u8 = &msg2;
 
     aegis.aegis128l_state_init(&st, &ad, ad.len, &nonce, &key);
@@ -1377,7 +1377,7 @@ test "aegis-128x2 - streaming at RATE boundaries" {
     var ret = aegis.aegis128x2_encrypt_detached(&c2, &mac2, mac_len, &msg, msg_len, &ad, ad.len, &nonce, &key);
     try testing.expectEqual(ret, 0);
 
-    var st: aegis.aegis128x2_state = undefined;
+    var st: aegis.aegis128x2_state align(64) = undefined;
     var cx: []u8 = &c;
     var mx_src: []const u8 = &msg;
 
@@ -1430,7 +1430,7 @@ test "aegis-128x4 - streaming at RATE boundaries" {
     var ret = aegis.aegis128x4_encrypt_detached(&c2, &mac2, mac_len, &msg, msg_len, &ad, ad.len, &nonce, &key);
     try testing.expectEqual(ret, 0);
 
-    var st: aegis.aegis128x4_state = undefined;
+    var st: aegis.aegis128x4_state align(64) = undefined;
     var cx: []u8 = &c;
     var mx_src: []const u8 = &msg;
 
@@ -1483,7 +1483,7 @@ test "aegis-256x2 - streaming at RATE boundaries" {
     var ret = aegis.aegis256x2_encrypt_detached(&c2, &mac2, mac_len, &msg, msg_len, &ad, ad.len, &nonce, &key);
     try testing.expectEqual(ret, 0);
 
-    var st: aegis.aegis256x2_state = undefined;
+    var st: aegis.aegis256x2_state align(32) = undefined;
     var cx: []u8 = &c;
     var mx_src: []const u8 = &msg;
 
@@ -1535,7 +1535,7 @@ test "aegis-256x4 - streaming at RATE boundaries" {
     var ret = aegis.aegis256x4_encrypt_detached(&c2, &mac2, mac_len, &msg, msg_len, &ad, ad.len, &nonce, &key);
     try testing.expectEqual(ret, 0);
 
-    var st: aegis.aegis256x4_state = undefined;
+    var st: aegis.aegis256x4_state align(64) = undefined;
     var cx: []u8 = &c;
     var mx_src: []const u8 = &msg;
 
@@ -1590,7 +1590,7 @@ test "aegis-128l - streaming decryption with written validation" {
         var ret = aegis.aegis128l_encrypt_detached(&c, &mac, mac_len, &msg, msg_len, &ad, ad.len, &nonce, &key);
         try testing.expectEqual(ret, 0);
 
-        var st: aegis.aegis128l_state = undefined;
+        var st: aegis.aegis128l_state align(32) = undefined;
         var mx: []u8 = &msg2;
         var cx_src: []const u8 = &c;
 
@@ -1692,7 +1692,7 @@ test "aegis-128x2 - streaming decryption with written validation" {
         var ret = aegis.aegis128x2_encrypt_detached(&c, &mac, mac_len, &msg, msg_len, &ad, ad.len, &nonce, &key);
         try testing.expectEqual(ret, 0);
 
-        var st: aegis.aegis128x2_state = undefined;
+        var st: aegis.aegis128x2_state align(64) = undefined;
         var mx: []u8 = &msg2;
         var cx_src: []const u8 = &c;
 
@@ -1743,7 +1743,7 @@ test "aegis-128x4 - streaming decryption with written validation" {
         var ret = aegis.aegis128x4_encrypt_detached(&c, &mac, mac_len, &msg, msg_len, &ad, ad.len, &nonce, &key);
         try testing.expectEqual(ret, 0);
 
-        var st: aegis.aegis128x4_state = undefined;
+        var st: aegis.aegis128x4_state align(64) = undefined;
         var mx: []u8 = &msg2;
         var cx_src: []const u8 = &c;
 
@@ -1794,7 +1794,7 @@ test "aegis-256x2 - streaming decryption with written validation" {
         var ret = aegis.aegis256x2_encrypt_detached(&c, &mac, mac_len, &msg, msg_len, &ad, ad.len, &nonce, &key);
         try testing.expectEqual(ret, 0);
 
-        var st: aegis.aegis256x2_state = undefined;
+        var st: aegis.aegis256x2_state align(32) = undefined;
         var mx: []u8 = &msg2;
         var cx_src: []const u8 = &c;
 
@@ -1845,7 +1845,7 @@ test "aegis-256x4 - streaming decryption with written validation" {
         var ret = aegis.aegis256x4_encrypt_detached(&c, &mac, mac_len, &msg, msg_len, &ad, ad.len, &nonce, &key);
         try testing.expectEqual(ret, 0);
 
-        var st: aegis.aegis256x4_state = undefined;
+        var st: aegis.aegis256x4_state align(64) = undefined;
         var mx: []u8 = &msg2;
         var cx_src: []const u8 = &c;
 
