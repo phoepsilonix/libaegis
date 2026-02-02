@@ -1356,3 +1356,244 @@ test "aegis128l_raf_scratch_validate - validates correctly" {
 
     try testing.expect(aegis.aegis128l_raf_scratch_validate(null, 4096) != 0);
 }
+
+test "aegis128l_raf - partial overwrite preserves trailing data" {
+    try testing.expectEqual(aegis.aegis_init(), 0);
+
+    var file = MemoryFile.init(testing.allocator);
+    defer file.deinit();
+
+    var key: [aegis.aegis128l_KEYBYTES]u8 = undefined;
+    random.bytes(&key);
+
+    var scratch_buf: [aegis.AEGIS128L_RAF_SCRATCH_SIZE(4096)]u8 align(aegis.AEGIS_RAF_SCRATCH_ALIGN) = undefined;
+    const scratch = aegis.aegis_raf_scratch{
+        .buf = &scratch_buf,
+        .len = scratch_buf.len,
+    };
+
+    const cfg = aegis.aegis_raf_config{
+        .chunk_size = 4096,
+        .flags = aegis.AEGIS_RAF_CREATE,
+        .scratch = &scratch,
+    };
+
+    var ctx: aegis.aegis128l_raf_ctx align(32) = undefined;
+
+    var ret = aegis.aegis128l_raf_create(&ctx, &file.io(), &rng(), &cfg, &key);
+    try testing.expectEqual(ret, 0);
+
+    const initial_data = "AAAABBBB";
+    var bytes_written: usize = undefined;
+    ret = aegis.aegis128l_raf_write(&ctx, &bytes_written, initial_data.ptr, initial_data.len, 0);
+    try testing.expectEqual(ret, 0);
+    try testing.expectEqual(bytes_written, initial_data.len);
+
+    var size: u64 = undefined;
+    ret = aegis.aegis128l_raf_get_size(&ctx, &size);
+    try testing.expectEqual(ret, 0);
+    try testing.expectEqual(size, 8);
+
+    const overwrite_data = "XX";
+    ret = aegis.aegis128l_raf_write(&ctx, &bytes_written, overwrite_data.ptr, overwrite_data.len, 4);
+    try testing.expectEqual(ret, 0);
+    try testing.expectEqual(bytes_written, overwrite_data.len);
+
+    ret = aegis.aegis128l_raf_get_size(&ctx, &size);
+    try testing.expectEqual(ret, 0);
+    try testing.expectEqual(size, 8);
+
+    var read_buf: [8]u8 = undefined;
+    var bytes_read: usize = undefined;
+    ret = aegis.aegis128l_raf_read(&ctx, &read_buf, &bytes_read, 8, 0);
+    try testing.expectEqual(ret, 0);
+    try testing.expectEqual(bytes_read, 8);
+    try testing.expectEqualSlices(u8, "AAAAXXBB", &read_buf);
+
+    aegis.aegis128l_raf_close(&ctx);
+}
+
+test "aegis128l_raf - partial overwrite preserves leading data" {
+    try testing.expectEqual(aegis.aegis_init(), 0);
+
+    var file = MemoryFile.init(testing.allocator);
+    defer file.deinit();
+
+    var key: [aegis.aegis128l_KEYBYTES]u8 = undefined;
+    random.bytes(&key);
+
+    var scratch_buf: [aegis.AEGIS128L_RAF_SCRATCH_SIZE(4096)]u8 align(aegis.AEGIS_RAF_SCRATCH_ALIGN) = undefined;
+    const scratch = aegis.aegis_raf_scratch{
+        .buf = &scratch_buf,
+        .len = scratch_buf.len,
+    };
+
+    const cfg = aegis.aegis_raf_config{
+        .chunk_size = 4096,
+        .flags = aegis.AEGIS_RAF_CREATE,
+        .scratch = &scratch,
+    };
+
+    var ctx: aegis.aegis128l_raf_ctx align(32) = undefined;
+
+    var ret = aegis.aegis128l_raf_create(&ctx, &file.io(), &rng(), &cfg, &key);
+    try testing.expectEqual(ret, 0);
+
+    const initial_data = "AAAABBBB";
+    var bytes_written: usize = undefined;
+    ret = aegis.aegis128l_raf_write(&ctx, &bytes_written, initial_data.ptr, initial_data.len, 0);
+    try testing.expectEqual(ret, 0);
+
+    var size: u64 = undefined;
+    ret = aegis.aegis128l_raf_get_size(&ctx, &size);
+    try testing.expectEqual(ret, 0);
+    try testing.expectEqual(size, 8);
+
+    const overwrite_data = "XX";
+    ret = aegis.aegis128l_raf_write(&ctx, &bytes_written, overwrite_data.ptr, overwrite_data.len, 0);
+    try testing.expectEqual(ret, 0);
+
+    ret = aegis.aegis128l_raf_get_size(&ctx, &size);
+    try testing.expectEqual(ret, 0);
+    try testing.expectEqual(size, 8);
+
+    var read_buf: [8]u8 = undefined;
+    var bytes_read: usize = undefined;
+    ret = aegis.aegis128l_raf_read(&ctx, &read_buf, &bytes_read, 8, 0);
+    try testing.expectEqual(ret, 0);
+    try testing.expectEqual(bytes_read, 8);
+    try testing.expectEqualSlices(u8, "XXAABBBB", &read_buf);
+
+    aegis.aegis128l_raf_close(&ctx);
+}
+
+test "aegis128l_raf - multiple partial overwrites within chunk" {
+    try testing.expectEqual(aegis.aegis_init(), 0);
+
+    var file = MemoryFile.init(testing.allocator);
+    defer file.deinit();
+
+    var key: [aegis.aegis128l_KEYBYTES]u8 = undefined;
+    random.bytes(&key);
+
+    var scratch_buf: [aegis.AEGIS128L_RAF_SCRATCH_SIZE(4096)]u8 align(aegis.AEGIS_RAF_SCRATCH_ALIGN) = undefined;
+    const scratch = aegis.aegis_raf_scratch{
+        .buf = &scratch_buf,
+        .len = scratch_buf.len,
+    };
+
+    const cfg = aegis.aegis_raf_config{
+        .chunk_size = 4096,
+        .flags = aegis.AEGIS_RAF_CREATE,
+        .scratch = &scratch,
+    };
+
+    var ctx: aegis.aegis128l_raf_ctx align(32) = undefined;
+
+    var ret = aegis.aegis128l_raf_create(&ctx, &file.io(), &rng(), &cfg, &key);
+    try testing.expectEqual(ret, 0);
+
+    var initial_data: [1000]u8 = undefined;
+    for (&initial_data, 0..) |*b, i| {
+        b.* = @truncate(i);
+    }
+    var bytes_written: usize = undefined;
+    ret = aegis.aegis128l_raf_write(&ctx, &bytes_written, &initial_data, initial_data.len, 0);
+    try testing.expectEqual(ret, 0);
+    try testing.expectEqual(bytes_written, 1000);
+
+    var size: u64 = undefined;
+    ret = aegis.aegis128l_raf_get_size(&ctx, &size);
+    try testing.expectEqual(ret, 0);
+    try testing.expectEqual(size, 1000);
+
+    const patch1 = "XXXXXXXXXX";
+    ret = aegis.aegis128l_raf_write(&ctx, &bytes_written, patch1.ptr, patch1.len, 100);
+    try testing.expectEqual(ret, 0);
+
+    const patch2 = "YYYYYYYYYY";
+    ret = aegis.aegis128l_raf_write(&ctx, &bytes_written, patch2.ptr, patch2.len, 500);
+    try testing.expectEqual(ret, 0);
+
+    ret = aegis.aegis128l_raf_get_size(&ctx, &size);
+    try testing.expectEqual(ret, 0);
+    try testing.expectEqual(size, 1000);
+
+    var read_buf: [1000]u8 = undefined;
+    var bytes_read: usize = undefined;
+    ret = aegis.aegis128l_raf_read(&ctx, &read_buf, &bytes_read, 1000, 0);
+    try testing.expectEqual(ret, 0);
+    try testing.expectEqual(bytes_read, 1000);
+
+    try testing.expectEqualSlices(u8, initial_data[0..100], read_buf[0..100]);
+    try testing.expectEqualSlices(u8, patch1, read_buf[100..110]);
+    try testing.expectEqualSlices(u8, initial_data[110..500], read_buf[110..500]);
+    try testing.expectEqualSlices(u8, patch2, read_buf[500..510]);
+    try testing.expectEqualSlices(u8, initial_data[510..1000], read_buf[510..1000]);
+
+    aegis.aegis128l_raf_close(&ctx);
+}
+
+test "aegis128l_raf - cross-chunk partial write preserves existing data" {
+    try testing.expectEqual(aegis.aegis_init(), 0);
+
+    var file = MemoryFile.init(testing.allocator);
+    defer file.deinit();
+
+    var key: [aegis.aegis128l_KEYBYTES]u8 = undefined;
+    random.bytes(&key);
+
+    const chunk_size: usize = 1024;
+    var scratch_buf: [aegis.AEGIS128L_RAF_SCRATCH_SIZE(chunk_size)]u8 align(aegis.AEGIS_RAF_SCRATCH_ALIGN) = undefined;
+    const scratch = aegis.aegis_raf_scratch{
+        .buf = &scratch_buf,
+        .len = scratch_buf.len,
+    };
+
+    const cfg = aegis.aegis_raf_config{
+        .chunk_size = @intCast(chunk_size),
+        .flags = aegis.AEGIS_RAF_CREATE,
+        .scratch = &scratch,
+    };
+
+    var ctx: aegis.aegis128l_raf_ctx align(32) = undefined;
+
+    var ret = aegis.aegis128l_raf_create(&ctx, &file.io(), &rng(), &cfg, &key);
+    try testing.expectEqual(ret, 0);
+
+    var initial_data: [2000]u8 = undefined;
+    for (&initial_data, 0..) |*b, i| {
+        b.* = @truncate(i ^ 0x5A);
+    }
+    var bytes_written: usize = undefined;
+    ret = aegis.aegis128l_raf_write(&ctx, &bytes_written, &initial_data, initial_data.len, 0);
+    try testing.expectEqual(ret, 0);
+    try testing.expectEqual(bytes_written, 2000);
+
+    var size: u64 = undefined;
+    ret = aegis.aegis128l_raf_get_size(&ctx, &size);
+    try testing.expectEqual(ret, 0);
+    try testing.expectEqual(size, 2000);
+
+    var patch: [100]u8 = undefined;
+    @memset(&patch, 0xFF);
+    ret = aegis.aegis128l_raf_write(&ctx, &bytes_written, &patch, patch.len, 1000);
+    try testing.expectEqual(ret, 0);
+    try testing.expectEqual(bytes_written, 100);
+
+    ret = aegis.aegis128l_raf_get_size(&ctx, &size);
+    try testing.expectEqual(ret, 0);
+    try testing.expectEqual(size, 2000);
+
+    var read_buf: [2000]u8 = undefined;
+    var bytes_read: usize = undefined;
+    ret = aegis.aegis128l_raf_read(&ctx, &read_buf, &bytes_read, 2000, 0);
+    try testing.expectEqual(ret, 0);
+    try testing.expectEqual(bytes_read, 2000);
+
+    try testing.expectEqualSlices(u8, initial_data[0..1000], read_buf[0..1000]);
+    try testing.expectEqualSlices(u8, &patch, read_buf[1000..1100]);
+    try testing.expectEqualSlices(u8, initial_data[1100..2000], read_buf[1100..2000]);
+
+    aegis.aegis128l_raf_close(&ctx);
+}
