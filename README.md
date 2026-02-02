@@ -97,7 +97,7 @@ aegis128l_raf_read(&ctx, buf, &bytes_read, len, offset);
 aegis128l_raf_close(&ctx);  // automatically calls sync
 ```
 
-The API requires pluggable I/O (read_at, write_at, get_size, set_size, sync) and RNG callbacks, making it usable with any storage backend. Callers provide a scratch buffer for internal use, enabling zero-allocation operation.
+The API requires pluggable I/O (`read_at`, `write_at`, `get_size`, `set_size`, `sync`) and RNG callbacks, making it usable with any storage backend. Callers provide a scratch buffer for internal use, enabling zero-allocation operation.
 
 ## Bindings
 
