@@ -534,6 +534,7 @@ write_impl(aegis_raf_ctx_internal *internal, size_t *bytes_written, const uint8_
     uint64_t ci;
     uint64_t chunk_start;
     uint64_t chunk_end;
+    uint64_t effective_file_size;
     size_t   zero_start;
     size_t   zero_end;
     size_t   total_written;
@@ -632,18 +633,16 @@ write_impl(aegis_raf_ctx_internal *internal, size_t *bytes_written, const uint8_
 
         memcpy(internal->chunk_buf + offset_in_chunk, in + total_written, bytes_to_write);
 
-        {
-            uint64_t effective_file_size =
-                new_file_size > internal->file_size ? new_file_size : internal->file_size;
+        effective_file_size =
+            new_file_size > internal->file_size ? new_file_size : internal->file_size;
 
-            chunk_end_offset = (chunk_idx + 1) * internal->chunk_size;
-            if (chunk_end_offset <= effective_file_size) {
-                chunk_valid_len = internal->chunk_size;
-            } else if (effective_file_size > chunk_idx * internal->chunk_size) {
-                chunk_valid_len = (size_t) (effective_file_size - chunk_idx * internal->chunk_size);
-            } else {
-                chunk_valid_len = offset_in_chunk + bytes_to_write;
-            }
+        chunk_end_offset = (chunk_idx + 1) * internal->chunk_size;
+        if (chunk_end_offset <= effective_file_size) {
+            chunk_valid_len = internal->chunk_size;
+        } else if (effective_file_size > chunk_idx * internal->chunk_size) {
+            chunk_valid_len = (size_t) (effective_file_size - chunk_idx * internal->chunk_size);
+        } else {
+            chunk_valid_len = offset_in_chunk + bytes_to_write;
         }
 
         if (write_chunk(internal, chunk_valid_len, chunk_idx) != 0) {
