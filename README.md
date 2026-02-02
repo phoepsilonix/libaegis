@@ -13,6 +13,7 @@ Portable C implementations of the [AEGIS](https://datatracker.ietf.org/doc/draft
 - All variants of AEGIS-MAC, supporting incremental updates.
 - Encryption and decryption with attached and detached tags
 - Incremental encryption and decryption.
+- Random-access encrypted file API (RAF) for building encrypted filesystems and databases.
 - Unauthenticated encryption and decryption (not recommended - only implemented for specific protocols)
 - Deterministic pseudorandom stream generation.
 
@@ -73,6 +74,30 @@ Copy everything in `src` directly into your project, and compile everything like
 Include `<aegis.h>` and call `aegis_init()` prior to doing anything else with the library.
 
 `aegis_init()` checks the CPU capabilities in order to later use the fastest implementations.
+
+### Random-Access File API
+
+The RAF (Random-Access File) API lets you work with encrypted files as naturally as regular files. Read any byte range, write anywhere, extend or truncate at will, all with full encryption and authentication. Files can be arbitrarily large without ever loading them entirely into memory. This makes it straightforward to build encrypted filesystems, databases, or any application that needs to modify encrypted data in place without re-encrypting the entire file.
+
+```c
+#include <aegis.h>
+
+// Allocate scratch buffer (can be stack, heap, or static)
+CRYPTO_ALIGN(64) uint8_t scratch_buf[AEGIS128L_RAF_SCRATCH_SIZE(4096)];
+aegis_raf_scratch scratch = { .buf = scratch_buf, .len = sizeof scratch_buf };
+
+aegis128l_raf_ctx ctx;
+aegis_raf_config cfg = { .scratch = &scratch, .chunk_size = 4096, .flags = AEGIS_RAF_CREATE };
+aegis_raf_io io = { /* your I/O callbacks */ };
+aegis_raf_rng rng = { /* your RNG callback */ };
+
+aegis128l_raf_create(&ctx, &io, &rng, &cfg, master_key);
+aegis128l_raf_write(&ctx, &written, data, len, offset);
+aegis128l_raf_read(&ctx, buf, &bytes_read, len, offset);
+aegis128l_raf_close(&ctx);  // automatically calls sync
+```
+
+The API requires pluggable I/O (read_at, write_at, get_size, set_size, sync) and RNG callbacks, making it usable with any storage backend. Callers provide a scratch buffer for internal use, enabling zero-allocation operation.
 
 ## Bindings
 

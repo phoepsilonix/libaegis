@@ -16,7 +16,7 @@ if(FAVOR_PERFORMANCE)
   add_definitions(-DFAVOR_PERFORMANCE)
 endif()
 
-file(GLOB SOURCE_FILES "src/aegis128l/*.c" "src/aegis128x2/*.c" "src/aegis128x4/*.c" "src/aegis256/*.c" "src/aegis256x2/*.c" "src/aegis256x4/*.c" "src/common/*.c")
+file(GLOB SOURCE_FILES "src/aegis128l/*.c" "src/aegis128x2/*.c" "src/aegis128x4/*.c" "src/aegis256/*.c" "src/aegis256x2/*.c" "src/aegis256x4/*.c" "src/common/*.c" "src/raf/*.c")
 file(GLOB HEADER_FILES "src/include/*.h")
 
 add_library("${PROJECT_NAME}")

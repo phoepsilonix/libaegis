@@ -78,6 +78,14 @@ pub fn build(b: *std.Build) void {
         "src/common/common.c",
         "src/common/cpu.c",
         "src/common/softaes.c",
+
+        "src/raf/raf.c",
+        "src/raf/raf_aegis128l.c",
+        "src/raf/raf_aegis128x2.c",
+        "src/raf/raf_aegis128x4.c",
+        "src/raf/raf_aegis256.c",
+        "src/raf/raf_aegis256x2.c",
+        "src/raf/raf_aegis256x4.c",
     };
 
     lib.root_module.addCSourceFiles(.{ .files = source_files });
@@ -108,8 +116,22 @@ pub fn build(b: *std.Build) void {
 
     const run_main_tests = b.addRunArtifact(main_tests);
 
+    const raf_tests = b.addTest(.{
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("src/test/raf_test.zig"),
+            .target = target,
+            .optimize = optimize,
+        }),
+    });
+
+    raf_tests.root_module.addIncludePath(b.path("src/include"));
+    raf_tests.root_module.linkLibrary(lib);
+
+    const run_raf_tests = b.addRunArtifact(raf_tests);
+
     const test_step = b.step("test", "Run library tests");
     test_step.dependOn(&run_main_tests.step);
+    test_step.dependOn(&run_raf_tests.step);
 
     if (with_benchmark) {
         const benchmark = b.addExecutable(.{
