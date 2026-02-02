@@ -1,5 +1,3 @@
-#include <errno.h>
-
 #define CONCAT_(a, b)     a##b
 #define CONCAT(a, b)      CONCAT_(a, b)
 #define CONCAT3_(a, b, c) a##b##c
