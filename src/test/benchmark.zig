@@ -3,7 +3,7 @@ const std = @import("std");
 const Io = std.Io;
 const mem = std.mem;
 const time = std.time;
-const Timer = std.time.Timer;
+const Timestamp = std.Io.Timestamp;
 
 const msg_len: usize = 16384;
 const iterations = 100000;
@@ -17,8 +17,7 @@ fn bench_aegis256(io: Io, stdout: *Io.Writer) !void {
     io.random(&nonce);
     io.random(&buf);
 
-    var timer = try Timer.start();
-    const start = timer.lap();
+    const start = Timestamp.now(io, .awake);
     for (0..iterations) |_| {
         _ = aegis.aegis256_encrypt(
             &buf,
@@ -31,10 +30,10 @@ fn bench_aegis256(io: Io, stdout: *Io.Writer) !void {
             &key,
         );
     }
-    const end = timer.read();
+    const end = Timestamp.now(io, .awake);
     mem.doNotOptimizeAway(buf[0]);
     const bits: f128 = @floatFromInt(@as(u128, msg_len) * iterations * 8);
-    const elapsed_s = @as(f128, @floatFromInt(end - start)) / time.ns_per_s;
+    const elapsed_s = @as(f128, @floatFromInt(end.nanoseconds - start.nanoseconds)) / time.ns_per_s;
     const throughput = @as(f64, @floatCast(bits / (elapsed_s * 1000 * 1000)));
     try stdout.print("AEGIS-256\t{d:10.2} Mb/s\n", .{throughput});
 }
@@ -48,8 +47,7 @@ fn bench_aegis256x2(io: Io, stdout: *Io.Writer) !void {
     io.random(&nonce);
     io.random(&buf);
 
-    var timer = try Timer.start();
-    const start = timer.lap();
+    const start = Timestamp.now(io, .awake);
     for (0..iterations) |_| {
         _ = aegis.aegis256x2_encrypt(
             &buf,
@@ -62,10 +60,10 @@ fn bench_aegis256x2(io: Io, stdout: *Io.Writer) !void {
             &key,
         );
     }
-    const end = timer.read();
+    const end = Timestamp.now(io, .awake);
     mem.doNotOptimizeAway(buf[0]);
     const bits: f128 = @floatFromInt(@as(u128, msg_len) * iterations * 8);
-    const elapsed_s = @as(f128, @floatFromInt(end - start)) / time.ns_per_s;
+    const elapsed_s = @as(f128, @floatFromInt(end.nanoseconds - start.nanoseconds)) / time.ns_per_s;
     const throughput = @as(f64, @floatCast(bits / (elapsed_s * 1000 * 1000)));
     try stdout.print("AEGIS-256X2\t{d:10.2} Mb/s\n", .{throughput});
 }
@@ -79,8 +77,7 @@ fn bench_aegis256x4(io: Io, stdout: *Io.Writer) !void {
     io.random(&nonce);
     io.random(&buf);
 
-    var timer = try Timer.start();
-    const start = timer.lap();
+    const start = Timestamp.now(io, .awake);
     for (0..iterations) |_| {
         _ = aegis.aegis256x4_encrypt(
             &buf,
@@ -93,10 +90,10 @@ fn bench_aegis256x4(io: Io, stdout: *Io.Writer) !void {
             &key,
         );
     }
-    const end = timer.read();
+    const end = Timestamp.now(io, .awake);
     mem.doNotOptimizeAway(buf[0]);
     const bits: f128 = @floatFromInt(@as(u128, msg_len) * iterations * 8);
-    const elapsed_s = @as(f128, @floatFromInt(end - start)) / time.ns_per_s;
+    const elapsed_s = @as(f128, @floatFromInt(end.nanoseconds - start.nanoseconds)) / time.ns_per_s;
     const throughput = @as(f64, @floatCast(bits / (elapsed_s * 1000 * 1000)));
     try stdout.print("AEGIS-256X4\t{d:10.2} Mb/s\n", .{throughput});
 }
@@ -110,8 +107,7 @@ fn bench_aegis128l(io: Io, stdout: *Io.Writer) !void {
     io.random(&nonce);
     io.random(&buf);
 
-    var timer = try Timer.start();
-    const start = timer.lap();
+    const start = Timestamp.now(io, .awake);
     for (0..iterations) |_| {
         _ = aegis.aegis128l_encrypt(
             &buf,
@@ -124,10 +120,10 @@ fn bench_aegis128l(io: Io, stdout: *Io.Writer) !void {
             &key,
         );
     }
-    const end = timer.read();
+    const end = Timestamp.now(io, .awake);
     mem.doNotOptimizeAway(buf[0]);
     const bits: f128 = @floatFromInt(@as(u128, msg_len) * iterations * 8);
-    const elapsed_s = @as(f128, @floatFromInt(end - start)) / time.ns_per_s;
+    const elapsed_s = @as(f128, @floatFromInt(end.nanoseconds - start.nanoseconds)) / time.ns_per_s;
     const throughput = @as(f64, @floatCast(bits / (elapsed_s * 1000 * 1000)));
     try stdout.print("AEGIS-128L\t{d:10.2} Mb/s\n", .{throughput});
 }
@@ -141,8 +137,7 @@ fn bench_aegis128x2(io: Io, stdout: *Io.Writer) !void {
     io.random(&nonce);
     io.random(&buf);
 
-    var timer = try Timer.start();
-    const start = timer.lap();
+    const start = Timestamp.now(io, .awake);
     for (0..iterations) |_| {
         _ = aegis.aegis128x2_encrypt(
             &buf,
@@ -155,10 +150,10 @@ fn bench_aegis128x2(io: Io, stdout: *Io.Writer) !void {
             &key,
         );
     }
-    const end = timer.read();
+    const end = Timestamp.now(io, .awake);
     mem.doNotOptimizeAway(buf[0]);
     const bits: f128 = @floatFromInt(@as(u128, msg_len) * iterations * 8);
-    const elapsed_s = @as(f128, @floatFromInt(end - start)) / time.ns_per_s;
+    const elapsed_s = @as(f128, @floatFromInt(end.nanoseconds - start.nanoseconds)) / time.ns_per_s;
     const throughput = @as(f64, @floatCast(bits / (elapsed_s * 1000 * 1000)));
     try stdout.print("AEGIS-128X2\t{d:10.2} Mb/s\n", .{throughput});
 }
@@ -172,8 +167,7 @@ fn bench_aegis128x4(io: Io, stdout: *Io.Writer) !void {
     io.random(&nonce);
     io.random(&buf);
 
-    var timer = try Timer.start();
-    const start = timer.lap();
+    const start = Timestamp.now(io, .awake);
     for (0..iterations) |_| {
         _ = aegis.aegis128x4_encrypt(
             &buf,
@@ -186,10 +180,10 @@ fn bench_aegis128x4(io: Io, stdout: *Io.Writer) !void {
             &key,
         );
     }
-    const end = timer.read();
+    const end = Timestamp.now(io, .awake);
     mem.doNotOptimizeAway(buf[0]);
     const bits: f128 = @floatFromInt(@as(u128, msg_len) * iterations * 8);
-    const elapsed_s = @as(f128, @floatFromInt(end - start)) / time.ns_per_s;
+    const elapsed_s = @as(f128, @floatFromInt(end.nanoseconds - start.nanoseconds)) / time.ns_per_s;
     const throughput = @as(f64, @floatCast(bits / (elapsed_s * 1000 * 1000)));
     try stdout.print("AEGIS-128X4\t{d:10.2} Mb/s\n", .{throughput});
 }
@@ -205,17 +199,16 @@ fn bench_aegis128l_mac(io: Io, stdout: *Io.Writer) !void {
     io.random(&buf);
     aegis.aegis128l_mac_init(&st, &key, &nonce);
 
-    var timer = try Timer.start();
-    const start = timer.lap();
+    const start = Timestamp.now(io, .awake);
     for (0..iterations) |_| {
         aegis.aegis128l_mac_reset(&st);
         _ = aegis.aegis128l_mac_update(&st, &buf, msg_len);
         _ = aegis.aegis128l_mac_final(&st, &buf, aegis.aegis128l_ABYTES_MAX);
     }
-    const end = timer.read();
+    const end = Timestamp.now(io, .awake);
     mem.doNotOptimizeAway(buf[0]);
     const bits: f128 = @floatFromInt(@as(u128, msg_len) * iterations * 8);
-    const elapsed_s = @as(f128, @floatFromInt(end - start)) / time.ns_per_s;
+    const elapsed_s = @as(f128, @floatFromInt(end.nanoseconds - start.nanoseconds)) / time.ns_per_s;
     const throughput = @as(f64, @floatCast(bits / (elapsed_s * 1000 * 1000)));
     try stdout.print("AEGIS-128L MAC\t{d:10.2} Mb/s\n", .{throughput});
 }
@@ -231,17 +224,16 @@ fn bench_aegis128x2_mac(io: Io, stdout: *Io.Writer) !void {
     io.random(&buf);
     aegis.aegis128x2_mac_init(&st, &key, &nonce);
 
-    var timer = try Timer.start();
-    const start = timer.lap();
+    const start = Timestamp.now(io, .awake);
     for (0..iterations) |_| {
         aegis.aegis128x2_mac_reset(&st);
         _ = aegis.aegis128x2_mac_update(&st, &buf, msg_len);
         _ = aegis.aegis128x2_mac_final(&st, &buf, aegis.aegis128x2_ABYTES_MAX);
     }
-    const end = timer.read();
+    const end = Timestamp.now(io, .awake);
     mem.doNotOptimizeAway(buf[0]);
     const bits: f128 = @floatFromInt(@as(u128, msg_len) * iterations * 8);
-    const elapsed_s = @as(f128, @floatFromInt(end - start)) / time.ns_per_s;
+    const elapsed_s = @as(f128, @floatFromInt(end.nanoseconds - start.nanoseconds)) / time.ns_per_s;
     const throughput = @as(f64, @floatCast(bits / (elapsed_s * 1000 * 1000)));
     try stdout.print("AEGIS-128X2 MAC\t{d:10.2} Mb/s\n", .{throughput});
 }
@@ -257,18 +249,17 @@ fn bench_aegis128x4_mac(io: Io, stdout: *Io.Writer) !void {
     io.random(&buf);
     aegis.aegis128x4_mac_init(&st0, &key, &nonce);
 
-    var timer = try Timer.start();
-    const start = timer.lap();
+    const start = Timestamp.now(io, .awake);
     for (0..iterations) |_| {
         var st: aegis.aegis128x4_mac_state align(64) = undefined;
         aegis.aegis128x4_mac_state_clone(&st, &st0);
         _ = aegis.aegis128x4_mac_update(&st, &buf, msg_len);
         _ = aegis.aegis128x4_mac_final(&st, &buf, aegis.aegis128x4_ABYTES_MAX);
     }
-    const end = timer.read();
+    const end = Timestamp.now(io, .awake);
     mem.doNotOptimizeAway(buf[0]);
     const bits: f128 = @floatFromInt(@as(u128, msg_len) * iterations * 8);
-    const elapsed_s = @as(f128, @floatFromInt(end - start)) / time.ns_per_s;
+    const elapsed_s = @as(f128, @floatFromInt(end.nanoseconds - start.nanoseconds)) / time.ns_per_s;
     const throughput = @as(f64, @floatCast(bits / (elapsed_s * 1000 * 1000)));
     try stdout.print("AEGIS-128X4 MAC\t{d:10.2} Mb/s\n", .{throughput});
 }
@@ -284,17 +275,16 @@ fn bench_aegis256_mac(io: Io, stdout: *Io.Writer) !void {
     io.random(&buf);
     aegis.aegis256_mac_init(&st, &key, &nonce);
 
-    var timer = try Timer.start();
-    const start = timer.lap();
+    const start = Timestamp.now(io, .awake);
     for (0..iterations) |_| {
         aegis.aegis256_mac_reset(&st);
         _ = aegis.aegis256_mac_update(&st, &buf, msg_len);
         _ = aegis.aegis256_mac_final(&st, &buf, aegis.aegis256_ABYTES_MAX);
     }
-    const end = timer.read();
+    const end = Timestamp.now(io, .awake);
     mem.doNotOptimizeAway(buf[0]);
     const bits: f128 = @floatFromInt(@as(u128, msg_len) * iterations * 8);
-    const elapsed_s = @as(f128, @floatFromInt(end - start)) / time.ns_per_s;
+    const elapsed_s = @as(f128, @floatFromInt(end.nanoseconds - start.nanoseconds)) / time.ns_per_s;
     const throughput = @as(f64, @floatCast(bits / (elapsed_s * 1000 * 1000)));
     try stdout.print("AEGIS-256 MAC\t{d:10.2} Mb/s\n", .{throughput});
 }
@@ -310,18 +300,17 @@ fn bench_aegis256x2_mac(io: Io, stdout: *Io.Writer) !void {
     io.random(&buf);
     aegis.aegis256x2_mac_init(&st0, &key, &nonce);
 
-    var timer = try Timer.start();
-    const start = timer.lap();
+    const start = Timestamp.now(io, .awake);
     for (0..iterations) |_| {
         var st: aegis.aegis256x2_mac_state align(32) = undefined;
         aegis.aegis256x2_mac_state_clone(&st, &st0);
         _ = aegis.aegis256x2_mac_update(&st, &buf, msg_len);
         _ = aegis.aegis256x2_mac_final(&st, &buf, aegis.aegis256x2_ABYTES_MAX);
     }
-    const end = timer.read();
+    const end = Timestamp.now(io, .awake);
     mem.doNotOptimizeAway(buf[0]);
     const bits: f128 = @floatFromInt(@as(u128, msg_len) * iterations * 8);
-    const elapsed_s = @as(f128, @floatFromInt(end - start)) / time.ns_per_s;
+    const elapsed_s = @as(f128, @floatFromInt(end.nanoseconds - start.nanoseconds)) / time.ns_per_s;
     const throughput = @as(f64, @floatCast(bits / (elapsed_s * 1000 * 1000)));
     try stdout.print("AEGIS-256X2 MAC\t{d:10.2} Mb/s\n", .{throughput});
 }
@@ -337,18 +326,17 @@ fn bench_aegis256x4_mac(io: Io, stdout: *Io.Writer) !void {
     io.random(&buf);
     aegis.aegis256x4_mac_init(&st0, &key, &nonce);
 
-    var timer = try Timer.start();
-    const start = timer.lap();
+    const start = Timestamp.now(io, .awake);
     for (0..iterations) |_| {
         var st: aegis.aegis256x4_mac_state align(64) = undefined;
         aegis.aegis256x4_mac_state_clone(&st, &st0);
         _ = aegis.aegis256x4_mac_update(&st, &buf, msg_len);
         _ = aegis.aegis256x4_mac_final(&st, &buf, aegis.aegis256x4_ABYTES_MAX);
     }
-    const end = timer.read();
+    const end = Timestamp.now(io, .awake);
     mem.doNotOptimizeAway(buf[0]);
     const bits: f128 = @floatFromInt(@as(u128, msg_len) * iterations * 8);
-    const elapsed_s = @as(f128, @floatFromInt(end - start)) / time.ns_per_s;
+    const elapsed_s = @as(f128, @floatFromInt(end.nanoseconds - start.nanoseconds)) / time.ns_per_s;
     const throughput = @as(f64, @floatCast(bits / (elapsed_s * 1000 * 1000)));
     try stdout.print("AEGIS-256X4 MAC\t{d:10.2} Mb/s\n", .{throughput});
 }
