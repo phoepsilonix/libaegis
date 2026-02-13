@@ -418,6 +418,9 @@ FN(open)(CTX_TYPE *ctx, const aegis_raf_io *io, const aegis_raf_rng *rng,
 {
     aegis_raf_ctx_internal *internal;
     uint64_t                backing_size;
+    uint64_t                backing_needed;
+    uint64_t                max_chunks;
+    uint64_t                rec_size;
     uint8_t                 hdr[AEGIS_RAF_HEADER_SIZE];
 
     if (io == NULL || rng == NULL || cfg == NULL || master_key == NULL) {
@@ -466,6 +469,20 @@ FN(open)(CTX_TYPE *ctx, const aegis_raf_io *io, const aegis_raf_rng *rng,
     derive_keys(internal->enc_key, internal->hdr_key, master_key, internal->file_id);
 
     if (read_and_verify_header(internal) != 0) {
+        memset(internal, 0, sizeof(aegis_raf_ctx_internal));
+        return -1;
+    }
+    rec_size = (uint64_t) record_size(internal->chunk_size);
+    max_chunks = get_chunk_count(internal->chunk_size, internal->file_size);
+    if (max_chunks != 0 &&
+        max_chunks > (UINT64_MAX - AEGIS_RAF_HEADER_SIZE) / rec_size) {
+        errno = EOVERFLOW;
+        memset(internal, 0, sizeof(aegis_raf_ctx_internal));
+        return -1;
+    }
+    backing_needed = AEGIS_RAF_HEADER_SIZE + max_chunks * rec_size;
+    if (backing_size < backing_needed) {
+        errno = EINVAL;
         memset(internal, 0, sizeof(aegis_raf_ctx_internal));
         return -1;
     }
