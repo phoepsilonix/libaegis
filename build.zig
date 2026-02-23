@@ -77,6 +77,7 @@ pub fn build(b: *std.Build) void {
 
         "src/common/common.c",
         "src/common/cpu.c",
+        "src/common/keccak.c",
         "src/common/softaes.c",
 
         "src/raf/raf.c",
@@ -129,9 +130,21 @@ pub fn build(b: *std.Build) void {
 
     const run_raf_tests = b.addRunArtifact(raf_tests);
 
+    const kdf_tests = b.addTest(.{
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("src/test/kdf_test.zig"),
+            .target = target,
+            .optimize = optimize,
+        }),
+    });
+    kdf_tests.root_module.addIncludePath(b.path("src/common"));
+    kdf_tests.root_module.linkLibrary(lib);
+    const run_kdf_tests = b.addRunArtifact(kdf_tests);
+
     const test_step = b.step("test", "Run library tests");
     test_step.dependOn(&run_main_tests.step);
     test_step.dependOn(&run_raf_tests.step);
+    test_step.dependOn(&run_kdf_tests.step);
 
     if (with_benchmark) {
         const benchmark = b.addExecutable(.{
