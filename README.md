@@ -74,6 +74,85 @@ Include `<aegis.h>` and call `aegis_init()` prior to doing anything else with th
 
 `aegis_init()` checks the CPU capabilities in order to later use the fastest implementations.
 
+### Encrypting and decrypting a message
+
+```c
+#include <aegis.h>
+#include <string.h>
+
+int main(void) {
+    aegis_init();
+
+    /* Use a secure random number generator for key and nonce. */
+    uint8_t key[aegis256_KEYBYTES];     /* 32 bytes */
+    uint8_t nonce[aegis256_NPUBBYTES];  /* 32 bytes */
+    memset(key, 0x42, sizeof key);
+    memset(nonce, 0x00, sizeof nonce);
+
+    const char *message = "hello, world";
+    size_t message_len = strlen(message);
+
+    /* Encrypt (detached mode: ciphertext and tag are separate) */
+    uint8_t ciphertext[128]; /* must be at least message_len bytes */
+    uint8_t tag[32];         /* 256-bit authentication tag */
+
+    aegis256_encrypt_detached(ciphertext, tag, sizeof tag,
+                              (const uint8_t *) message, message_len,
+                              NULL, 0,   /* no additional data */
+                              nonce, key);
+
+    /* Decrypt and verify */
+    uint8_t decrypted[128]; /* must be at least message_len bytes */
+
+    if (aegis256_decrypt_detached(decrypted, ciphertext, message_len,
+                                  tag, sizeof tag,
+                                  NULL, 0,
+                                  nonce, key) != 0) {
+        /* Authentication failed: the data was tampered with */
+        return 1;
+    }
+    /* decrypted now contains the original message */
+
+    return 0;
+}
+```
+
+The one-shot `aegis256_encrypt()` / `aegis256_decrypt()` functions work the same way but append the tag to the ciphertext, so the output buffer must be `message_len + maclen` bytes.
+
+All six variants follow the same API pattern -- just swap the prefix (`aegis128l_`, `aegis256_`, `aegis128x2_`, etc.) and adjust the key/nonce sizes.
+
+### Computing a MAC
+
+AEGIS can also be used as a standalone message authentication code. The MAC API supports incremental updates, so you can feed data in chunks.
+
+```c
+#include <aegis.h>
+#include <string.h>
+
+int main(void) {
+    aegis_init();
+
+    uint8_t key[aegis256_KEYBYTES];
+    memset(key, 0x42, sizeof key);
+
+    /* Initialize the MAC state (NULL nonce = all zeros) */
+    aegis256_mac_state st;
+    aegis256_mac_init(&st, key, NULL);
+
+    /* Feed data in one or more chunks */
+    aegis256_mac_update(&st, (const uint8_t *) "hello, ", 7);
+    aegis256_mac_update(&st, (const uint8_t *) "world", 5);
+
+    /* Finalize and get the 256-bit tag */
+    uint8_t tag[32];
+    aegis256_mac_final(&st, tag, sizeof tag);
+
+    return 0;
+}
+```
+
+The same key must not be used for both MAC and encryption. If you need to authenticate multiple messages with the same key, clone the initialized state with `aegis256_mac_state_clone()` or reset it with `aegis256_mac_reset()` rather than re-initializing.
+
 ### Random-Access File API
 
 The RAF (Random-Access File) API lets you work with encrypted files as naturally as regular files. Read any byte range, write anywhere, extend or truncate at will, all with full encryption and authentication. Files can be arbitrarily large without ever loading them entirely into memory. This makes it straightforward to build encrypted filesystems, databases, or any application that needs to modify encrypted data in place without re-encrypting the entire file.
