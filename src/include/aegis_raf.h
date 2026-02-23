@@ -12,6 +12,16 @@
 #    endif
 #endif
 
+#ifndef AEGIS_WARN_UNUSED_RESULT
+#    if defined(__GNUC__) || defined(__clang__)
+#        define AEGIS_WARN_UNUSED_RESULT __attribute__((warn_unused_result))
+#    elif defined(_MSC_VER)
+#        define AEGIS_WARN_UNUSED_RESULT _Check_return_
+#    else
+#        define AEGIS_WARN_UNUSED_RESULT
+#    endif
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -334,8 +344,9 @@ int aegis128l_raf_open(aegis128l_raf_ctx *ctx, const aegis_raf_io *io, const aeg
  * Returns 0 with *bytes_read=0 at EOF. Returns -1 on I/O error or if
  * authentication fails (indicating corruption or tampering).
  */
+AEGIS_WARN_UNUSED_RESULT
 int aegis128l_raf_read(aegis128l_raf_ctx *ctx, uint8_t *out, size_t *bytes_read, size_t len,
-                       uint64_t offset) __attribute__((warn_unused_result));
+                       uint64_t offset);
 
 /*
  * Encrypt and write bytes at the given offset.
@@ -344,8 +355,9 @@ int aegis128l_raf_read(aegis128l_raf_ctx *ctx, uint8_t *out, size_t *bytes_read,
  * the file when writing past the current end. On success, returns 0 and
  * sets *bytes_written to len.
  */
+AEGIS_WARN_UNUSED_RESULT
 int aegis128l_raf_write(aegis128l_raf_ctx *ctx, size_t *bytes_written, const uint8_t *in,
-                        size_t len, uint64_t offset) __attribute__((warn_unused_result));
+                        size_t len, uint64_t offset);
 
 /*
  * Resize the file to the given size.
@@ -407,11 +419,13 @@ int aegis128x2_raf_create(aegis128x2_raf_ctx *ctx, const aegis_raf_io *io, const
 int aegis128x2_raf_open(aegis128x2_raf_ctx *ctx, const aegis_raf_io *io, const aegis_raf_rng *rng,
                         const aegis_raf_config *cfg, const uint8_t *master_key);
 
+AEGIS_WARN_UNUSED_RESULT
 int aegis128x2_raf_read(aegis128x2_raf_ctx *ctx, uint8_t *out, size_t *bytes_read, size_t len,
-                        uint64_t offset) __attribute__((warn_unused_result));
+                        uint64_t offset);
 
+AEGIS_WARN_UNUSED_RESULT
 int aegis128x2_raf_write(aegis128x2_raf_ctx *ctx, size_t *bytes_written, const uint8_t *in,
-                         size_t len, uint64_t offset) __attribute__((warn_unused_result));
+                         size_t len, uint64_t offset);
 
 int aegis128x2_raf_truncate(aegis128x2_raf_ctx *ctx, uint64_t size);
 
@@ -438,11 +452,13 @@ int aegis128x4_raf_create(aegis128x4_raf_ctx *ctx, const aegis_raf_io *io, const
 int aegis128x4_raf_open(aegis128x4_raf_ctx *ctx, const aegis_raf_io *io, const aegis_raf_rng *rng,
                         const aegis_raf_config *cfg, const uint8_t *master_key);
 
+AEGIS_WARN_UNUSED_RESULT
 int aegis128x4_raf_read(aegis128x4_raf_ctx *ctx, uint8_t *out, size_t *bytes_read, size_t len,
-                        uint64_t offset) __attribute__((warn_unused_result));
+                        uint64_t offset);
 
+AEGIS_WARN_UNUSED_RESULT
 int aegis128x4_raf_write(aegis128x4_raf_ctx *ctx, size_t *bytes_written, const uint8_t *in,
-                         size_t len, uint64_t offset) __attribute__((warn_unused_result));
+                         size_t len, uint64_t offset);
 
 int aegis128x4_raf_truncate(aegis128x4_raf_ctx *ctx, uint64_t size);
 
@@ -469,11 +485,13 @@ int aegis256_raf_create(aegis256_raf_ctx *ctx, const aegis_raf_io *io, const aeg
 int aegis256_raf_open(aegis256_raf_ctx *ctx, const aegis_raf_io *io, const aegis_raf_rng *rng,
                       const aegis_raf_config *cfg, const uint8_t *master_key);
 
+AEGIS_WARN_UNUSED_RESULT
 int aegis256_raf_read(aegis256_raf_ctx *ctx, uint8_t *out, size_t *bytes_read, size_t len,
-                      uint64_t offset) __attribute__((warn_unused_result));
+                      uint64_t offset);
 
+AEGIS_WARN_UNUSED_RESULT
 int aegis256_raf_write(aegis256_raf_ctx *ctx, size_t *bytes_written, const uint8_t *in, size_t len,
-                       uint64_t offset) __attribute__((warn_unused_result));
+                       uint64_t offset);
 
 int aegis256_raf_truncate(aegis256_raf_ctx *ctx, uint64_t size);
 
@@ -500,11 +518,13 @@ int aegis256x2_raf_create(aegis256x2_raf_ctx *ctx, const aegis_raf_io *io, const
 int aegis256x2_raf_open(aegis256x2_raf_ctx *ctx, const aegis_raf_io *io, const aegis_raf_rng *rng,
                         const aegis_raf_config *cfg, const uint8_t *master_key);
 
+AEGIS_WARN_UNUSED_RESULT
 int aegis256x2_raf_read(aegis256x2_raf_ctx *ctx, uint8_t *out, size_t *bytes_read, size_t len,
-                        uint64_t offset) __attribute__((warn_unused_result));
+                        uint64_t offset);
 
+AEGIS_WARN_UNUSED_RESULT
 int aegis256x2_raf_write(aegis256x2_raf_ctx *ctx, size_t *bytes_written, const uint8_t *in,
-                         size_t len, uint64_t offset) __attribute__((warn_unused_result));
+                         size_t len, uint64_t offset);
 
 int aegis256x2_raf_truncate(aegis256x2_raf_ctx *ctx, uint64_t size);
 
@@ -531,11 +551,13 @@ int aegis256x4_raf_create(aegis256x4_raf_ctx *ctx, const aegis_raf_io *io, const
 int aegis256x4_raf_open(aegis256x4_raf_ctx *ctx, const aegis_raf_io *io, const aegis_raf_rng *rng,
                         const aegis_raf_config *cfg, const uint8_t *master_key);
 
+AEGIS_WARN_UNUSED_RESULT
 int aegis256x4_raf_read(aegis256x4_raf_ctx *ctx, uint8_t *out, size_t *bytes_read, size_t len,
-                        uint64_t offset) __attribute__((warn_unused_result));
+                        uint64_t offset);
 
+AEGIS_WARN_UNUSED_RESULT
 int aegis256x4_raf_write(aegis256x4_raf_ctx *ctx, size_t *bytes_written, const uint8_t *in,
-                         size_t len, uint64_t offset) __attribute__((warn_unused_result));
+                         size_t len, uint64_t offset);
 
 int aegis256x4_raf_truncate(aegis256x4_raf_ctx *ctx, uint64_t size);
 
