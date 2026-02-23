@@ -98,9 +98,11 @@ aegis128l_raf_close(&ctx);  // automatically calls sync
 
 The API requires pluggable I/O (`read_at`, `write_at`, `get_size`, `set_size`, `sync`) and RNG callbacks, making it usable with any storage backend. Callers provide a scratch buffer for internal use, enabling zero-allocation operation.
 
-#### Merkle tree integrity
+#### Merkle tree (optional)
 
-RAF supports an optional Merkle tree that tracks per-chunk integrity. The tree is updated automatically on writes and truncations, and can be verified or rebuilt on demand. This is useful for detecting silent corruption or tampering without re-reading and re-encrypting every chunk.
+Each chunk is already independently authenticated by its AEAD tag, so basic integrity is always guaranteed. The optional Merkle tree is a separate feature that maintains a live hash commitment over the entire file's plaintext content, updated incrementally as chunks are written or the file is truncated. This is useful when you need a single digest that represents the current state of the whole file, for instance to attest file contents to a remote party, detect out-of-band modifications (by comparing against a previously stored commitment), or anchor the file in an external data structure.
+
+Most applications don't need this and can use the RAF API without it.
 
 Leaf values come from your `hash_leaf` callback over plaintext chunk data. They are not the RAF per-chunk AEAD authentication tags.
 Keep leaf hashing stable by depending on `chunk`, `chunk_len`, and `chunk_idx`.
@@ -129,7 +131,7 @@ aegis_raf_config cfg = {
     .flags = AEGIS_RAF_CREATE, .merkle = &merkle,
 };
 
-// After writes, verify integrity or read the root commitment
+// After writes, verify Merkle state against current file contents or read the root commitment
 aegis128l_raf_merkle_verify(&ctx, &corrupted_chunk);
 uint8_t root[32];
 aegis128l_raf_merkle_commitment(&ctx, root, sizeof root);

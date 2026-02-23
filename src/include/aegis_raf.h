@@ -128,11 +128,12 @@ typedef struct aegis_raf_rng {
 } aegis_raf_rng;
 
 /*
- * Optional Merkle tree configuration for chunk-level integrity tracking.
+ * Optional Merkle tree configuration for whole-file commitment tracking.
  *
- * When provided, the RAF context will automatically update a Merkle tree
- * buffer on chunk writes. The tree root can be used to verify file integrity
- * without reading all chunks.
+ * Individual chunks are already authenticated by their AEAD tags. When
+ * provided, the RAF context will automatically update a Merkle tree
+ * buffer on chunk writes, maintaining a single root hash that represents
+ * the current plaintext content of the entire file.
  *
  * user:        User-defined pointer passed to hash callbacks.
  * buf:         Caller-allocated buffer for the Merkle tree. Use
