@@ -88,7 +88,7 @@ pub fn build(b: *std.Build) void {
         "src/raf/raf_aegis256x4.c",
     };
 
-    lib.root_module.addCSourceFiles(.{ .files = source_files });
+    lib.root_module.addCSourceFiles(.{ .files = source_files, .flags = &.{"-std=c99"} });
 
     // This declares intent for the executable to be installed into the
     // standard location when the user invokes the "install" step (the default
