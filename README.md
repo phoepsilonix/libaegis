@@ -107,10 +107,7 @@ Most applications don't need this and can use the RAF API without it.
 Leaf values come from your `hash_leaf` callback over plaintext chunk data. They are not the RAF per-chunk AEAD authentication tags.
 Keep leaf hashing stable by depending on `chunk`, `chunk_len`, and `chunk_idx`.
 
-`aegis128l_raf_merkle_commitment()` returns a context-bound commitment that
-includes the file's version, algorithm, chunk size, and identity alongside
-the structural tree root and file size. This is the recommended API for
-RAF files.
+`aegis128l_raf_merkle_commitment()` returns a context-bound commitment that includes the file's content, version, algorithm, chunk size, and identity alongside the structural tree root and file size.
 
 ```c
 // Provide hash callbacks and a caller-allocated buffer
