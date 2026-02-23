@@ -1,3 +1,5 @@
+#include "../common/keccak.h"
+
 #define CONCAT_(a, b)     a##b
 #define CONCAT(a, b)      CONCAT_(a, b)
 #define CONCAT3_(a, b, c) a##b##c
@@ -7,7 +9,6 @@
 #define CTX_TYPE       CONCAT3(VARIANT, _raf_, ctx)
 #define MAC_STATE_TYPE CONCAT3(VARIANT, _mac_, state)
 
-#define AAD_BYTES     44
 #define KDF_CONST     "aegis-raf-kdf-v1"
 #define KDF_CONST_LEN 16
 
@@ -15,22 +16,18 @@ static void
 derive_keys(uint8_t *enc_key, uint8_t *hdr_key, const uint8_t *master_key,
             const uint8_t file_id[AEGIS_RAF_FILE_ID_BYTES])
 {
-    uint8_t kdf_nonce[NPUBBYTES];
     uint8_t key_material[KEYBYTES * 2];
-    size_t  i;
 
-    memcpy(kdf_nonce, file_id, NPUBBYTES);
-    for (i = 0; i < KDF_CONST_LEN && i < NPUBBYTES; i++) {
-        kdf_nonce[i] ^= (uint8_t) KDF_CONST[i];
-    }
-
-    VARIANT_stream(key_material, sizeof key_material, kdf_nonce, master_key);
+#if KEYBYTES == 16
+    aegis_kdf_128(key_material, sizeof key_material, (const uint8_t *) KDF_CONST, KDF_CONST_LEN,
+                  master_key, KEYBYTES, file_id, AEGIS_RAF_FILE_ID_BYTES);
+#else
+    aegis_kdf_256(key_material, sizeof key_material, (const uint8_t *) KDF_CONST, KDF_CONST_LEN,
+                  master_key, KEYBYTES, file_id, AEGIS_RAF_FILE_ID_BYTES);
+#endif
 
     memcpy(enc_key, key_material, KEYBYTES);
     memcpy(hdr_key, key_material + KEYBYTES, KEYBYTES);
-
-    memset(key_material, 0, sizeof key_material);
-    memset(kdf_nonce, 0, sizeof kdf_nonce);
 }
 
 static int
@@ -40,14 +37,11 @@ compute_header_mac(uint8_t mac[AEGIS_RAF_TAG_BYTES], const uint8_t hdr[AEGIS_RAF
     MAC_STATE_TYPE st;
     VARIANT_mac_init(&st, hdr_key, NULL);
     if (VARIANT_mac_update(&st, hdr, AEGIS_RAF_HEADER_SIZE - AEGIS_RAF_TAG_BYTES) != 0) {
-        memset(&st, 0, sizeof st);
         return -1;
     }
     if (VARIANT_mac_final(&st, mac, AEGIS_RAF_TAG_BYTES) != 0) {
-        memset(&st, 0, sizeof st);
         return -1;
     }
-    memset(&st, 0, sizeof st);
     return 0;
 }
 
@@ -59,12 +53,10 @@ verify_header_mac(const uint8_t hdr[AEGIS_RAF_HEADER_SIZE], const uint8_t *hdr_k
 
     VARIANT_mac_init(&st, hdr_key, NULL);
     if (VARIANT_mac_update(&st, hdr, AEGIS_RAF_HEADER_SIZE - AEGIS_RAF_TAG_BYTES) != 0) {
-        memset(&st, 0, sizeof st);
         return -1;
     }
     ret = VARIANT_mac_verify(&st, hdr + AEGIS_RAF_HEADER_SIZE - AEGIS_RAF_TAG_BYTES,
                              AEGIS_RAF_TAG_BYTES);
-    memset(&st, 0, sizeof st);
     if (ret != 0) {
         errno = EBADMSG;
     }
@@ -98,14 +90,12 @@ write_header(aegis_raf_ctx_internal *ctx)
     uint8_t hdr[AEGIS_RAF_HEADER_SIZE];
 
     memcpy(hdr, AEGIS_RAF_MAGIC, 8);
-    STORE16_LE(hdr + 8, AEGIS_RAF_VERSION);
-    STORE16_LE(hdr + 10, AEGIS_RAF_HEADER_SIZE);
+    STORE16_LE(hdr + 8, AEGIS_RAF_HEADER_SIZE);
+    hdr[10] = AEGIS_RAF_VERSION;
+    hdr[11] = (uint8_t) ctx->alg_id;
     STORE32_LE(hdr + 12, ctx->chunk_size);
-    STORE16_LE(hdr + 16, AEGIS_RAF_MAC_LEN);
-    STORE16_LE(hdr + 18, ctx->alg_id);
-    STORE64_LE(hdr + 20, ctx->file_size);
-    memcpy(hdr + 28, ctx->file_id, AEGIS_RAF_FILE_ID_BYTES);
-    memset(hdr + 60, 0, AEGIS_RAF_RESERVED_BYTES);
+    STORE64_LE(hdr + 16, ctx->file_size);
+    memcpy(hdr + 24, ctx->file_id, AEGIS_RAF_FILE_ID_BYTES);
 
     if (compute_header_mac(hdr + AEGIS_RAF_HEADER_SIZE - AEGIS_RAF_TAG_BYTES, hdr, ctx->hdr_key) !=
         0) {
@@ -116,33 +106,25 @@ write_header(aegis_raf_ctx_internal *ctx)
 }
 
 static int
-read_and_verify_header(aegis_raf_ctx_internal *ctx)
+verify_header(aegis_raf_ctx_internal *ctx, const uint8_t hdr[AEGIS_RAF_HEADER_SIZE])
 {
-    uint8_t        hdr[AEGIS_RAF_HEADER_SIZE];
-    uint16_t       version;
-    uint16_t       header_size;
-    uint16_t       mac_len;
-    uint16_t       alg_id;
-    const uint8_t *reserved;
-    size_t         i;
-
-    if (ctx->io.read_at(ctx->io.user, hdr, AEGIS_RAF_HEADER_SIZE, 0) != 0) {
-        return -1;
-    }
+    uint16_t header_size;
+    uint8_t  version;
+    uint8_t  alg_id;
 
     if (memcmp(hdr, AEGIS_RAF_MAGIC, 8) != 0) {
         errno = EINVAL;
         return -1;
     }
 
-    version = LOAD16_LE(hdr + 8);
-    if (version != AEGIS_RAF_VERSION) {
+    header_size = LOAD16_LE(hdr + 8);
+    if (header_size != AEGIS_RAF_HEADER_SIZE) {
         errno = EINVAL;
         return -1;
     }
 
-    header_size = LOAD16_LE(hdr + 10);
-    if (header_size != AEGIS_RAF_HEADER_SIZE) {
+    version = hdr[10];
+    if (version != AEGIS_RAF_VERSION) {
         errno = EINVAL;
         return -1;
     }
@@ -154,34 +136,21 @@ read_and_verify_header(aegis_raf_ctx_internal *ctx)
         return -1;
     }
 
-    mac_len = LOAD16_LE(hdr + 16);
-    if (mac_len != AEGIS_RAF_MAC_LEN) {
-        errno = EINVAL;
-        return -1;
-    }
-
-    alg_id = LOAD16_LE(hdr + 18);
+    alg_id = hdr[11];
     if (alg_id != ALG_ID) {
         errno = EINVAL;
         return -1;
     }
 
-    ctx->file_size = LOAD64_LE(hdr + 20);
-    memcpy(ctx->file_id, hdr + 28, AEGIS_RAF_FILE_ID_BYTES);
-
-    reserved = hdr + 60;
-    for (i = 0; i < AEGIS_RAF_RESERVED_BYTES; i++) {
-        if (reserved[i] != 0) {
-            errno = EINVAL;
-            return -1;
-        }
-    }
+    ctx->file_size = LOAD64_LE(hdr + 16);
+    memcpy(ctx->file_id, hdr + 24, AEGIS_RAF_FILE_ID_BYTES);
 
     if (verify_header_mac(hdr, ctx->hdr_key) != 0) {
         return -1;
     }
 
-    ctx->alg_id = alg_id;
+    ctx->alg_id  = alg_id;
+    ctx->version = version;
     return 0;
 }
 
@@ -252,6 +221,49 @@ zeroize_scratch_buffers(aegis_raf_ctx_internal *ctx)
     ctx->record_buf_size = 0;
     ctx->chunk_buf       = NULL;
     ctx->chunk_buf_size  = 0;
+}
+
+static int
+setup_merkle_config(aegis_raf_ctx_internal *ctx, const aegis_raf_merkle_config *merkle,
+                    uint64_t current_file_size, uint32_t chunk_size)
+{
+    uint64_t current_chunks;
+    uint64_t i;
+    int      ret;
+
+    if (merkle == NULL) {
+        ctx->merkle_enabled = 0;
+        memset(&ctx->merkle_cfg, 0, sizeof(ctx->merkle_cfg));
+        return 0;
+    }
+
+    if (aegis_raf_merkle_config_validate(merkle) != 0) {
+        return -1;
+    }
+
+    current_chunks = get_chunk_count(chunk_size, current_file_size);
+    if (current_chunks > merkle->max_chunks) {
+        errno = EOVERFLOW;
+        return -1;
+    }
+
+    ctx->merkle_cfg     = *merkle;
+    ctx->merkle_enabled = 1;
+
+    for (i = 0; i < merkle->max_chunks; i++) {
+        ret = raf_merkle_clear_leaf(&ctx->merkle_cfg, i);
+        if (ret != 0) {
+            return ret;
+        }
+    }
+    if (merkle->max_chunks > 0) {
+        ret = raf_merkle_update_parents(&ctx->merkle_cfg, 0, merkle->max_chunks - 1);
+        if (ret != 0) {
+            return ret;
+        }
+    }
+
+    return 0;
 }
 
 static int
@@ -334,7 +346,7 @@ FN(create)(CTX_TYPE *ctx, const aegis_raf_io *io, const aegis_raf_rng *rng,
     int                     file_exists;
     aegis_raf_ctx_internal *internal;
 
-    if (io == NULL || rng == NULL || cfg == NULL || master_key == NULL) {
+    if (ctx == NULL || io == NULL || rng == NULL || cfg == NULL || master_key == NULL) {
         errno = EINVAL;
         return -1;
     }
@@ -380,6 +392,7 @@ FN(create)(CTX_TYPE *ctx, const aegis_raf_io *io, const aegis_raf_rng *rng,
     internal->rng        = *rng;
     internal->chunk_size = cfg->chunk_size;
     internal->alg_id     = ALG_ID;
+    internal->version    = AEGIS_RAF_VERSION;
     internal->file_size  = 0;
     internal->keybytes   = KEYBYTES;
     internal->npubbytes  = NPUBBYTES;
@@ -409,6 +422,12 @@ FN(create)(CTX_TYPE *ctx, const aegis_raf_io *io, const aegis_raf_rng *rng,
         return -1;
     }
 
+    if (setup_merkle_config(internal, cfg->merkle, 0, internal->chunk_size) != 0) {
+        zeroize_scratch_buffers(internal);
+        memset(internal, 0, sizeof(aegis_raf_ctx_internal));
+        return -1;
+    }
+
     return 0;
 }
 
@@ -423,7 +442,7 @@ FN(open)(CTX_TYPE *ctx, const aegis_raf_io *io, const aegis_raf_rng *rng,
     uint64_t                rec_size;
     uint8_t                 hdr[AEGIS_RAF_HEADER_SIZE];
 
-    if (io == NULL || rng == NULL || cfg == NULL || master_key == NULL) {
+    if (ctx == NULL || io == NULL || rng == NULL || cfg == NULL || master_key == NULL) {
         errno = EINVAL;
         return -1;
     }
@@ -465,17 +484,16 @@ FN(open)(CTX_TYPE *ctx, const aegis_raf_io *io, const aegis_raf_rng *rng,
         return -1;
     }
 
-    memcpy(internal->file_id, hdr + 28, AEGIS_RAF_FILE_ID_BYTES);
+    memcpy(internal->file_id, hdr + 24, AEGIS_RAF_FILE_ID_BYTES);
     derive_keys(internal->enc_key, internal->hdr_key, master_key, internal->file_id);
 
-    if (read_and_verify_header(internal) != 0) {
+    if (verify_header(internal, hdr) != 0) {
         memset(internal, 0, sizeof(aegis_raf_ctx_internal));
         return -1;
     }
-    rec_size = (uint64_t) record_size(internal->chunk_size);
+    rec_size   = (uint64_t) record_size(internal->chunk_size);
     max_chunks = get_chunk_count(internal->chunk_size, internal->file_size);
-    if (max_chunks != 0 &&
-        max_chunks > (UINT64_MAX - AEGIS_RAF_HEADER_SIZE) / rec_size) {
+    if (max_chunks != 0 && max_chunks > (UINT64_MAX - AEGIS_RAF_HEADER_SIZE) / rec_size) {
         errno = EOVERFLOW;
         memset(internal, 0, sizeof(aegis_raf_ctx_internal));
         return -1;
@@ -492,6 +510,13 @@ FN(open)(CTX_TYPE *ctx, const aegis_raf_io *io, const aegis_raf_rng *rng,
         return -1;
     }
 
+    if (setup_merkle_config(internal, cfg->merkle, internal->file_size, internal->chunk_size) !=
+        0) {
+        zeroize_scratch_buffers(internal);
+        memset(internal, 0, sizeof(aegis_raf_ctx_internal));
+        return -1;
+    }
+
     return 0;
 }
 
@@ -503,6 +528,11 @@ FN(read)(CTX_TYPE *ctx, uint8_t *out, size_t *bytes_read, size_t len, uint64_t o
     uint64_t                chunk_idx;
     size_t                  offset_in_chunk;
     size_t                  bytes_to_read;
+
+    if (ctx == NULL || bytes_read == NULL || (len > 0 && out == NULL)) {
+        errno = EINVAL;
+        return -1;
+    }
 
     *bytes_read = 0;
     if (len == 0 || offset >= internal->file_size) {
@@ -584,6 +614,11 @@ write_impl(aegis_raf_ctx_internal *internal, size_t *bytes_written, const uint8_
         return -1;
     }
 
+    if (internal->merkle_enabled && new_num_chunks > internal->merkle_cfg.max_chunks) {
+        errno = EOVERFLOW;
+        return -1;
+    }
+
     if (new_file_size > internal->file_size) {
         new_backing_size = AEGIS_RAF_HEADER_SIZE + chunks_size;
         if (internal->io.set_size(internal->io.user, new_backing_size) != 0) {
@@ -621,8 +656,18 @@ write_impl(aegis_raf_ctx_internal *internal, size_t *bytes_written, const uint8_
                 memset(internal->chunk_buf + zero_start, 0, zero_end - zero_start);
             }
 
-            if (write_chunk(internal, internal->chunk_size, ci) != 0) {
+            chunk_valid_len = (chunk_end <= new_file_size) ? internal->chunk_size
+                                                           : (size_t) (new_file_size - chunk_start);
+
+            if (write_chunk(internal, chunk_valid_len, ci) != 0) {
                 return -1;
+            }
+
+            if (internal->merkle_enabled) {
+                if (raf_merkle_update_chunk(&internal->merkle_cfg, internal->chunk_buf,
+                                            chunk_valid_len, ci) != 0) {
+                    return -1;
+                }
             }
         }
     }
@@ -666,6 +711,13 @@ write_impl(aegis_raf_ctx_internal *internal, size_t *bytes_written, const uint8_
             return -1;
         }
 
+        if (internal->merkle_enabled) {
+            if (raf_merkle_update_chunk(&internal->merkle_cfg, internal->chunk_buf, chunk_valid_len,
+                                        chunk_idx) != 0) {
+                return -1;
+            }
+        }
+
         total_written += bytes_to_write;
     }
 
@@ -685,6 +737,11 @@ FN(write)(CTX_TYPE *ctx, size_t *bytes_written, const uint8_t *in, size_t len, u
 {
     aegis_raf_ctx_internal *internal = (aegis_raf_ctx_internal *) ctx;
 
+    if (ctx == NULL || bytes_written == NULL || (len > 0 && in == NULL)) {
+        errno = EINVAL;
+        return -1;
+    }
+
     *bytes_written = 0;
     if (len == 0) {
         return 0;
@@ -698,10 +755,18 @@ FN(truncate)(CTX_TYPE *ctx, uint64_t size)
 {
     aegis_raf_ctx_internal *internal = (aegis_raf_ctx_internal *) ctx;
     size_t                  written;
+    uint64_t                old_num_chunks;
     uint64_t                new_num_chunks;
     uint64_t                rec_size;
     uint64_t                chunks_size;
     uint64_t                new_backing_size;
+    uint64_t                last_chunk_idx;
+    size_t                  new_chunk_len;
+
+    if (ctx == NULL) {
+        errno = EINVAL;
+        return -1;
+    }
 
     if (size == internal->file_size) {
         return 0;
@@ -711,6 +776,7 @@ FN(truncate)(CTX_TYPE *ctx, uint64_t size)
         return write_impl(internal, &written, NULL, 0, size);
     }
 
+    old_num_chunks = get_chunk_count(internal->chunk_size, internal->file_size);
     new_num_chunks = get_chunk_count(internal->chunk_size, size);
     rec_size       = record_size(internal->chunk_size);
 
@@ -729,6 +795,28 @@ FN(truncate)(CTX_TYPE *ctx, uint64_t size)
         return -1;
     }
 
+    if (internal->merkle_enabled) {
+        if (new_num_chunks < old_num_chunks) {
+            if (raf_merkle_clear_range(&internal->merkle_cfg, new_num_chunks, old_num_chunks - 1) !=
+                0) {
+                return -1;
+            }
+        }
+
+        if (size > 0 && new_num_chunks > 0) {
+            last_chunk_idx = new_num_chunks - 1;
+            new_chunk_len  = (size_t) (size - last_chunk_idx * internal->chunk_size);
+
+            if (read_chunk(internal, last_chunk_idx) != 0) {
+                return -1;
+            }
+            if (raf_merkle_update_chunk(&internal->merkle_cfg, internal->chunk_buf, new_chunk_len,
+                                        last_chunk_idx) != 0) {
+                return -1;
+            }
+        }
+    }
+
     internal->file_size = size;
     return write_header(internal);
 }
@@ -737,7 +825,13 @@ int
 FN(get_size)(const CTX_TYPE *ctx, uint64_t *size)
 {
     const aegis_raf_ctx_internal *internal = (const aegis_raf_ctx_internal *) ctx;
-    *size                                  = internal->file_size;
+
+    if (ctx == NULL || size == NULL) {
+        errno = EINVAL;
+        return -1;
+    }
+
+    *size = internal->file_size;
     return 0;
 }
 
@@ -745,6 +839,12 @@ int
 FN(sync)(CTX_TYPE *ctx)
 {
     aegis_raf_ctx_internal *internal = (aegis_raf_ctx_internal *) ctx;
+
+    if (ctx == NULL) {
+        errno = EINVAL;
+        return -1;
+    }
+
     if (internal->io.sync != NULL) {
         return internal->io.sync(internal->io.user);
     }
@@ -755,11 +855,257 @@ void
 FN(close)(CTX_TYPE *ctx)
 {
     aegis_raf_ctx_internal *internal = (aegis_raf_ctx_internal *) ctx;
+
+    if (ctx == NULL) {
+        return;
+    }
+
     if (internal->io.sync != NULL) {
         (void) internal->io.sync(internal->io.user);
     }
     zeroize_scratch_buffers(internal);
     memset(internal, 0, sizeof(aegis_raf_ctx_internal));
+}
+
+int
+FN(merkle_rebuild)(CTX_TYPE *ctx)
+{
+    aegis_raf_ctx_internal *internal = (aegis_raf_ctx_internal *) ctx;
+    uint64_t                num_chunks;
+    uint64_t                ci;
+    size_t                  chunk_len;
+    uint64_t                chunk_end;
+    int                     ret;
+
+    if (ctx == NULL) {
+        errno = EINVAL;
+        return -1;
+    }
+
+    if (!internal->merkle_enabled) {
+        errno = ENOTSUP;
+        return -1;
+    }
+
+    num_chunks = get_chunk_count(internal->chunk_size, internal->file_size);
+
+    for (ci = 0; ci < num_chunks; ci++) {
+        if (read_chunk(internal, ci) != 0) {
+            return -1;
+        }
+
+        chunk_end = (ci + 1) * internal->chunk_size;
+        if (chunk_end <= internal->file_size) {
+            chunk_len = internal->chunk_size;
+        } else {
+            chunk_len = (size_t) (internal->file_size - ci * internal->chunk_size);
+        }
+
+        ret = raf_merkle_update_leaf(&internal->merkle_cfg, internal->chunk_buf, chunk_len, ci);
+        if (ret != 0) {
+            return ret;
+        }
+    }
+
+    for (ci = num_chunks; ci < internal->merkle_cfg.max_chunks; ci++) {
+        ret = raf_merkle_clear_leaf(&internal->merkle_cfg, ci);
+        if (ret != 0) {
+            return ret;
+        }
+    }
+
+    if (internal->merkle_cfg.max_chunks > 0) {
+        ret = raf_merkle_update_parents(&internal->merkle_cfg, 0,
+                                        internal->merkle_cfg.max_chunks - 1);
+        if (ret != 0) {
+            return ret;
+        }
+    }
+
+    return 0;
+}
+
+int
+FN(merkle_verify)(CTX_TYPE *ctx, uint64_t *corrupted_chunk)
+{
+    aegis_raf_ctx_internal *internal = (aegis_raf_ctx_internal *) ctx;
+    uint64_t                num_chunks;
+    uint64_t                ci;
+    size_t                  chunk_len;
+    uint64_t                chunk_end;
+    uint64_t                level_count;
+    uint32_t                level = 0;
+    uint64_t                parent_count;
+    uint64_t                i;
+    size_t                  leaf_off;
+    size_t                  left_off;
+    size_t                  right_off;
+    size_t                  parent_off;
+    uint8_t                 computed_hash[AEGIS_RAF_MERKLE_HASH_MAX];
+    uint8_t                 empty_hash[AEGIS_RAF_MERKLE_HASH_MAX];
+    int                     ret = 0;
+
+    if (ctx == NULL) {
+        errno = EINVAL;
+        return -1;
+    }
+
+    if (!internal->merkle_enabled) {
+        errno = ENOTSUP;
+        return -1;
+    }
+
+    if (internal->merkle_cfg.hash_len < AEGIS_RAF_MERKLE_HASH_MIN ||
+        internal->merkle_cfg.hash_len > AEGIS_RAF_MERKLE_HASH_MAX) {
+        errno = EINVAL;
+        ret   = -1;
+        goto cleanup;
+    }
+
+    num_chunks = get_chunk_count(internal->chunk_size, internal->file_size);
+    if (num_chunks > internal->merkle_cfg.max_chunks) {
+        if (corrupted_chunk != NULL) {
+            *corrupted_chunk = UINT64_MAX;
+        }
+        errno = EOVERFLOW;
+        ret   = -1;
+        goto cleanup;
+    }
+
+    for (ci = 0; ci < num_chunks; ci++) {
+        if (read_chunk(internal, ci) != 0) {
+            if (corrupted_chunk != NULL) {
+                *corrupted_chunk = ci;
+            }
+            ret = -1;
+            goto cleanup;
+        }
+
+        chunk_end = (ci + 1) * internal->chunk_size;
+        if (chunk_end <= internal->file_size) {
+            chunk_len = internal->chunk_size;
+        } else {
+            chunk_len = (size_t) (internal->file_size - ci * internal->chunk_size);
+        }
+
+        ret = internal->merkle_cfg.hash_leaf(internal->merkle_cfg.user, computed_hash,
+                                             internal->merkle_cfg.hash_len, internal->chunk_buf,
+                                             chunk_len, ci);
+        if (ret != 0) {
+            if (corrupted_chunk != NULL) {
+                *corrupted_chunk = ci;
+            }
+            goto cleanup;
+        }
+
+        leaf_off = (size_t) (ci * internal->merkle_cfg.hash_len);
+        if (memcmp(computed_hash, internal->merkle_cfg.buf + leaf_off,
+                   internal->merkle_cfg.hash_len) != 0) {
+            if (corrupted_chunk != NULL) {
+                *corrupted_chunk = ci;
+            }
+            errno = EBADMSG;
+            ret   = -1;
+            goto cleanup;
+        }
+    }
+
+    for (ci = num_chunks; ci < internal->merkle_cfg.max_chunks; ci++) {
+        ret = internal->merkle_cfg.hash_empty(internal->merkle_cfg.user, computed_hash,
+                                              internal->merkle_cfg.hash_len, 0, ci);
+        if (ret != 0) {
+            if (corrupted_chunk != NULL) {
+                *corrupted_chunk = ci;
+            }
+            goto cleanup;
+        }
+
+        leaf_off = (size_t) (ci * internal->merkle_cfg.hash_len);
+        if (memcmp(computed_hash, internal->merkle_cfg.buf + leaf_off,
+                   internal->merkle_cfg.hash_len) != 0) {
+            if (corrupted_chunk != NULL) {
+                *corrupted_chunk = ci;
+            }
+            errno = EBADMSG;
+            ret   = -1;
+            goto cleanup;
+        }
+    }
+
+    level_count = internal->merkle_cfg.max_chunks;
+    for (level = 0; level_count > 1; level++) {
+        parent_count = (level_count + 1) / 2;
+
+        for (i = 0; i < parent_count; i++) {
+            uint64_t left_child  = i * 2;
+            uint64_t right_child = left_child + 1;
+
+            left_off = raf_merkle_node_offset(internal->merkle_cfg.max_chunks,
+                                              internal->merkle_cfg.hash_len, level, left_child);
+
+            if (right_child < level_count) {
+                right_off =
+                    raf_merkle_node_offset(internal->merkle_cfg.max_chunks,
+                                           internal->merkle_cfg.hash_len, level, right_child);
+                ret = internal->merkle_cfg.hash_parent(
+                    internal->merkle_cfg.user, computed_hash, internal->merkle_cfg.hash_len,
+                    internal->merkle_cfg.buf + left_off, internal->merkle_cfg.buf + right_off,
+                    level, i);
+            } else {
+                ret = internal->merkle_cfg.hash_empty(internal->merkle_cfg.user, empty_hash,
+                                                      internal->merkle_cfg.hash_len, level,
+                                                      right_child);
+                if (ret != 0) {
+                    goto cleanup;
+                }
+                ret = internal->merkle_cfg.hash_parent(
+                    internal->merkle_cfg.user, computed_hash, internal->merkle_cfg.hash_len,
+                    internal->merkle_cfg.buf + left_off, empty_hash, level, i);
+            }
+            if (ret != 0) {
+                goto cleanup;
+            }
+
+            parent_off = raf_merkle_node_offset(internal->merkle_cfg.max_chunks,
+                                                internal->merkle_cfg.hash_len, level + 1, i);
+            if (memcmp(computed_hash, internal->merkle_cfg.buf + parent_off,
+                       internal->merkle_cfg.hash_len) != 0) {
+                if (corrupted_chunk != NULL) {
+                    *corrupted_chunk = UINT64_MAX;
+                }
+                errno = EBADMSG;
+                ret   = -1;
+                goto cleanup;
+            }
+        }
+
+        level_count = parent_count;
+    }
+
+cleanup:
+    return ret;
+}
+
+int
+FN(merkle_commitment)(const CTX_TYPE *ctx, uint8_t *out, size_t out_len)
+{
+    const aegis_raf_ctx_internal *internal = (const aegis_raf_ctx_internal *) ctx;
+    uint8_t                       commit_ctx[AEGIS_RAF_COMMITMENT_CONTEXT_BYTES];
+
+    if (ctx == NULL) {
+        errno = EINVAL;
+        return -1;
+    }
+    if (!internal->merkle_enabled) {
+        errno = ENOTSUP;
+        return -1;
+    }
+
+    build_commitment_context(commit_ctx, internal->version, internal->alg_id, internal->chunk_size,
+                             internal->file_id);
+
+    return aegis_raf_merkle_root(&internal->merkle_cfg, out, out_len, commit_ctx, sizeof commit_ctx,
+                                 internal->file_size);
 }
 
 #undef CONCAT_
@@ -769,6 +1115,5 @@ FN(close)(CTX_TYPE *ctx)
 #undef FN
 #undef CTX_TYPE
 #undef MAC_STATE_TYPE
-#undef AAD_BYTES
 #undef KDF_CONST
 #undef KDF_CONST_LEN

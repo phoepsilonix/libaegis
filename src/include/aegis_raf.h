@@ -29,12 +29,15 @@ extern "C" {
 #define AEGIS_RAF_CHUNK_MIN 1024
 #define AEGIS_RAF_CHUNK_MAX (1 << 20)
 
-#define AEGIS_RAF_HEADER_SIZE   92
-#define AEGIS_RAF_FILE_ID_BYTES 32
+#define AEGIS_RAF_HEADER_SIZE   64
+#define AEGIS_RAF_FILE_ID_BYTES 24
 #define AEGIS_RAF_TAG_BYTES     16
 
-#define AEGIS_RAF_SCRATCH_ALIGN  64
-#define AEGIS_RAF_ALIGN_UP(x, a) (((x) + ((a) - 1)) & ~((size_t) (a) - 1))
+#define AEGIS_RAF_SCRATCH_ALIGN            64
+#define AEGIS_RAF_ALIGN_UP(x, a)           (((x) + ((a) - 1)) & ~((size_t) (a) - 1))
+#define AEGIS_RAF_MERKLE_HASH_MIN          8
+#define AEGIS_RAF_MERKLE_HASH_MAX          64
+#define AEGIS_RAF_COMMITMENT_CONTEXT_BYTES 32
 
 #define AEGIS128L_RAF_NPUBBYTES  16
 #define AEGIS128X2_RAF_NPUBBYTES 16
@@ -125,6 +128,73 @@ typedef struct aegis_raf_rng {
 } aegis_raf_rng;
 
 /*
+ * Optional Merkle tree configuration for chunk-level integrity tracking.
+ *
+ * When provided, the RAF context will automatically update a Merkle tree
+ * buffer on chunk writes. The tree root can be used to verify file integrity
+ * without reading all chunks.
+ *
+ * user:        User-defined pointer passed to hash callbacks.
+ * buf:         Caller-allocated buffer for the Merkle tree. Use
+ *              aegis_raf_merkle_buffer_size() to determine required size.
+ * len:         Size of the buffer in bytes.
+ * hash_len:    Size of each hash in bytes (e.g., 32 for SHA-256).
+ *              Must be between AEGIS_RAF_MERKLE_HASH_MIN and
+ *              AEGIS_RAF_MERKLE_HASH_MAX.
+ * max_chunks:  Maximum number of chunks (leaves) the tree can hold.
+ *              Writes exceeding this limit will fail with EOVERFLOW.
+ *              Merkle initialization work is O(max_chunks), so choose a
+ *              realistic upper bound instead of an excessively large ceiling.
+ *
+ * Hash callbacks must return 0 on success, -1 on error.
+ *
+ * hash_leaf:   Hash a chunk. Called with the plaintext chunk data, its length
+ *              (may be less than chunk_size for the final chunk), and the
+ *              chunk index. The hash must depend only on these three inputs.
+ *
+ * hash_parent: Hash two child nodes to produce a parent. Called with left and
+ *              right child hashes, the tree level (0 = leaves), and the node
+ *              index within that level.
+ *
+ * hash_empty:  Produce a hash for an empty/missing node. Called for leaves
+ *              beyond EOF and for missing siblings when a level has an odd
+ *              number of nodes. Level and node index are provided for domain
+ *              separation.
+ *
+ * hash_commitment: Produce the root commitment by hashing the structural tree
+ *              root together with the file context and file size. ctx/ctx_len
+ *              provide file context for domain separation. The per-variant
+ *              *_raf_merkle_commitment() API passes ctx pointing to
+ *              AEGIS_RAF_COMMITMENT_CONTEXT_BYTES bytes encoding version,
+ *              alg_id, chunk_size, and file_id. The callback should include
+ *              all of ctx, file_size, and structural_root in its hash for
+ *              full domain separation. The structural_root pointer is exactly
+ *              hash_len bytes. The callback must write exactly hash_len bytes
+ *              to out.
+ *
+ * Thread Safety: Merkle buffers are not internally synchronized. Callers must
+ * serialize writes that share a Merkle buffer, or provide external locking.
+ */
+typedef struct aegis_raf_merkle_config {
+    int (*hash_leaf)(void *user, uint8_t *out, size_t out_len, const uint8_t *chunk,
+                     size_t chunk_len, uint64_t chunk_idx);
+
+    int (*hash_parent)(void *user, uint8_t *out, size_t out_len, const uint8_t *left,
+                       const uint8_t *right, uint32_t level, uint64_t node_idx);
+
+    int (*hash_empty)(void *user, uint8_t *out, size_t out_len, uint32_t level, uint64_t node_idx);
+
+    int (*hash_commitment)(void *user, uint8_t *out, size_t out_len, const uint8_t *structural_root,
+                           const uint8_t *ctx, size_t ctx_len, uint64_t file_size);
+
+    void    *user;
+    uint8_t *buf;
+    size_t   len;
+    uint64_t max_chunks;
+    uint32_t hash_len;
+} aegis_raf_merkle_config;
+
+/*
  * Configuration for RAF create/open operations.
  *
  * scratch:    Caller-allocated scratch buffer (required).
@@ -132,11 +202,13 @@ typedef struct aegis_raf_rng {
  *             Ignored when opening existing files.
  * flags:      AEGIS_RAF_CREATE to create new files, AEGIS_RAF_TRUNCATE to
  *             overwrite existing files.
+ * merkle:     Optional Merkle tree configuration. Set to NULL to disable.
  */
 typedef struct aegis_raf_config {
-    const aegis_raf_scratch *scratch;
-    uint32_t                 chunk_size;
-    uint8_t                  flags;
+    const aegis_raf_scratch       *scratch;
+    const aegis_raf_merkle_config *merkle;
+    uint32_t                       chunk_size;
+    uint8_t                        flags;
 } aegis_raf_config;
 
 /*
@@ -147,9 +219,9 @@ typedef struct aegis_raf_config {
  * file_size:  Logical plaintext file size.
  */
 typedef struct aegis_raf_info {
-    uint16_t alg_id;
-    uint32_t chunk_size;
     uint64_t file_size;
+    uint32_t chunk_size;
+    uint8_t  alg_id;
 } aegis_raf_info;
 
 /* Returns minimum allowed chunk size (AEGIS_RAF_CHUNK_MIN). */
@@ -198,6 +270,18 @@ int    aegis256x2_raf_scratch_validate(const aegis_raf_scratch *scratch, uint32_
 
 size_t aegis256x4_raf_scratch_size(uint32_t chunk_size);
 int    aegis256x4_raf_scratch_validate(const aegis_raf_scratch *scratch, uint32_t chunk_size);
+
+/*
+ * Merkle tree helpers.
+ */
+
+/*
+ * Returns the required buffer size in bytes for a Merkle tree based on the
+ * max_chunks and hash_len fields in the config. The buf field may be NULL
+ * when calling this function (it's used to determine how much to allocate).
+ * Returns 0 if cfg is NULL, max_chunks is 0, or hash_len is 0.
+ */
+size_t aegis_raf_merkle_buffer_size(const aegis_raf_merkle_config *cfg);
 
 /*
  * Random-Access Encrypted File API
@@ -282,6 +366,35 @@ int aegis128l_raf_sync(aegis128l_raf_ctx *ctx);
  */
 void aegis128l_raf_close(aegis128l_raf_ctx *ctx);
 
+/*
+ * Rebuild the Merkle tree from file contents.
+ *
+ * Reads each chunk from the file and recomputes all leaf and parent hashes.
+ * Useful after opening an existing file to restore the Merkle tree state.
+ * Returns -1 if Merkle is not enabled or on I/O/hash error.
+ */
+int aegis128l_raf_merkle_rebuild(aegis128l_raf_ctx *ctx);
+
+/*
+ * Verify file integrity against the Merkle tree.
+ *
+ * Reads each chunk, computes its hash, and compares against the stored tree.
+ * On success, returns 0. On corruption, returns -1 and sets *corrupted_chunk
+ * to the index of the first corrupted chunk (if corrupted_chunk is not NULL).
+ * Returns -1 with errno=ENOTSUP if Merkle is not enabled.
+ */
+int aegis128l_raf_merkle_verify(aegis128l_raf_ctx *ctx, uint64_t *corrupted_chunk);
+
+/*
+ * Compute the root commitment with canonical context binding.
+ *
+ * Builds a context blob from the file's version, alg_id, chunk_size, and
+ * file_id, then combines it with the structural tree root and file_size via
+ * hash_commitment. This is the recommended API for RAF files.
+ * Returns -1 with errno=ENOTSUP if Merkle is not enabled.
+ */
+int aegis128l_raf_merkle_commitment(const aegis128l_raf_ctx *ctx, uint8_t *out, size_t out_len);
+
 /* Opaque context for AEGIS-128X2 RAF operations. See aegis128l_raf_* for API docs. */
 typedef struct aegis128x2_raf_ctx {
     CRYPTO_ALIGN(32) uint8_t opaque[512];
@@ -306,6 +419,12 @@ int aegis128x2_raf_get_size(const aegis128x2_raf_ctx *ctx, uint64_t *size);
 int aegis128x2_raf_sync(aegis128x2_raf_ctx *ctx);
 
 void aegis128x2_raf_close(aegis128x2_raf_ctx *ctx);
+
+int aegis128x2_raf_merkle_rebuild(aegis128x2_raf_ctx *ctx);
+
+int aegis128x2_raf_merkle_verify(aegis128x2_raf_ctx *ctx, uint64_t *corrupted_chunk);
+
+int aegis128x2_raf_merkle_commitment(const aegis128x2_raf_ctx *ctx, uint8_t *out, size_t out_len);
 
 /* Opaque context for AEGIS-128X4 RAF operations. See aegis128l_raf_* for API docs. */
 typedef struct aegis128x4_raf_ctx {
@@ -332,6 +451,12 @@ int aegis128x4_raf_sync(aegis128x4_raf_ctx *ctx);
 
 void aegis128x4_raf_close(aegis128x4_raf_ctx *ctx);
 
+int aegis128x4_raf_merkle_rebuild(aegis128x4_raf_ctx *ctx);
+
+int aegis128x4_raf_merkle_verify(aegis128x4_raf_ctx *ctx, uint64_t *corrupted_chunk);
+
+int aegis128x4_raf_merkle_commitment(const aegis128x4_raf_ctx *ctx, uint8_t *out, size_t out_len);
+
 /* Opaque context for AEGIS-256 RAF operations. Master key is 32 bytes. */
 typedef struct aegis256_raf_ctx {
     CRYPTO_ALIGN(16) uint8_t opaque[512];
@@ -356,6 +481,12 @@ int aegis256_raf_get_size(const aegis256_raf_ctx *ctx, uint64_t *size);
 int aegis256_raf_sync(aegis256_raf_ctx *ctx);
 
 void aegis256_raf_close(aegis256_raf_ctx *ctx);
+
+int aegis256_raf_merkle_rebuild(aegis256_raf_ctx *ctx);
+
+int aegis256_raf_merkle_verify(aegis256_raf_ctx *ctx, uint64_t *corrupted_chunk);
+
+int aegis256_raf_merkle_commitment(const aegis256_raf_ctx *ctx, uint8_t *out, size_t out_len);
 
 /* Opaque context for AEGIS-256X2 RAF operations. Master key is 32 bytes. */
 typedef struct aegis256x2_raf_ctx {
@@ -382,6 +513,12 @@ int aegis256x2_raf_sync(aegis256x2_raf_ctx *ctx);
 
 void aegis256x2_raf_close(aegis256x2_raf_ctx *ctx);
 
+int aegis256x2_raf_merkle_rebuild(aegis256x2_raf_ctx *ctx);
+
+int aegis256x2_raf_merkle_verify(aegis256x2_raf_ctx *ctx, uint64_t *corrupted_chunk);
+
+int aegis256x2_raf_merkle_commitment(const aegis256x2_raf_ctx *ctx, uint8_t *out, size_t out_len);
+
 /* Opaque context for AEGIS-256X4 RAF operations. Master key is 32 bytes. */
 typedef struct aegis256x4_raf_ctx {
     CRYPTO_ALIGN(64) uint8_t opaque[512];
@@ -406,6 +543,12 @@ int aegis256x4_raf_get_size(const aegis256x4_raf_ctx *ctx, uint64_t *size);
 int aegis256x4_raf_sync(aegis256x4_raf_ctx *ctx);
 
 void aegis256x4_raf_close(aegis256x4_raf_ctx *ctx);
+
+int aegis256x4_raf_merkle_rebuild(aegis256x4_raf_ctx *ctx);
+
+int aegis256x4_raf_merkle_verify(aegis256x4_raf_ctx *ctx, uint64_t *corrupted_chunk);
+
+int aegis256x4_raf_merkle_commitment(const aegis256x4_raf_ctx *ctx, uint8_t *out, size_t out_len);
 
 #ifdef __cplusplus
 }

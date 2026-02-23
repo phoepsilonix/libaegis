@@ -98,6 +98,45 @@ aegis128l_raf_close(&ctx);  // automatically calls sync
 
 The API requires pluggable I/O (`read_at`, `write_at`, `get_size`, `set_size`, `sync`) and RNG callbacks, making it usable with any storage backend. Callers provide a scratch buffer for internal use, enabling zero-allocation operation.
 
+#### Merkle tree integrity
+
+RAF supports an optional Merkle tree that tracks per-chunk integrity. The tree is updated automatically on writes and truncations, and can be verified or rebuilt on demand. This is useful for detecting silent corruption or tampering without re-reading and re-encrypting every chunk.
+
+Leaf values come from your `hash_leaf` callback over plaintext chunk data. They are not the RAF per-chunk AEAD authentication tags.
+Keep leaf hashing stable by depending on `chunk`, `chunk_len`, and `chunk_idx`.
+
+`aegis128l_raf_merkle_commitment()` returns a context-bound commitment that
+includes the file's version, algorithm, chunk size, and identity alongside
+the structural tree root and file size. This is the recommended API for
+RAF files.
+
+```c
+// Provide hash callbacks and a caller-allocated buffer
+aegis_raf_merkle_config merkle = {
+    .hash_leaf       = my_hash_leaf,       // hash plaintext chunk data (not the RAF auth tag)
+    .hash_parent     = my_hash_parent,     // combine two child digests
+    .hash_empty      = my_hash_empty,      // digest for missing/empty nodes
+    .hash_commitment = my_hash_commitment, // hash(root, ctx, file_size)
+    .hash_len        = 32,                 // digest size (8..64 bytes)
+    .max_chunks      = 1024,
+    .buf             = merkle_buf,
+    .len             = sizeof merkle_buf,
+};
+
+// Pass merkle config when creating the RAF context
+aegis_raf_config cfg = {
+    .scratch = &scratch, .chunk_size = 4096,
+    .flags = AEGIS_RAF_CREATE, .merkle = &merkle,
+};
+
+// After writes, verify integrity or read the root commitment
+aegis128l_raf_merkle_verify(&ctx, &corrupted_chunk);
+uint8_t root[32];
+aegis128l_raf_merkle_commitment(&ctx, root, sizeof root);
+```
+
+The tree uses a flat buffer layout with configurable hash callbacks, so it works with any hash function. `aegis_raf_merkle_buffer_size()` computes the required buffer size for a given `max_chunks` and `hash_len`.
+
 ## Bindings
 
 - [`aegis`](https://crates.io/crates/aegis) is a set of bindings for Rust.
