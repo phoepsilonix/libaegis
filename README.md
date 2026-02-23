@@ -21,7 +21,7 @@ Portable C implementations of the [AEGIS](https://datatracker.ietf.org/doc/draft
 
 Note that the compiler makes a difference. Zig (or a recent `clang` with target-specific options such as `-march=native`) produces more efficient code than `gcc`.
 
-### Compilation with `zig`:
+### Compilation with `zig`
 
 ```sh
 zig build -Drelease
@@ -47,12 +47,11 @@ A benchmark can also be built with the `-Dwith-benchmark` option:
 zig build -Drelease -Dfavor-performance -Dwith-benchmark
 ```
 
-
 `libaegis` doesn't need WASI nor any extension to work on WebAssembly. The `wasm32-freestanding` target is fully supported.
 
 WebAssembly extensions such as `bulk_memory` and `simd128` can be enabled by adding `-Dcpu=baseline+bulk_memory+simd128` to the command line.
 
-### Compilation with `cmake`:
+### Compilation with `cmake`
 
 ```sh
 mkdir build
