@@ -11,7 +11,7 @@ const MemoryFile = struct {
 
     fn init(allocator: std.mem.Allocator) MemoryFile {
         return .{
-            .data = .{},
+            .data = .empty,
             .allocator = allocator,
         };
     }
@@ -4237,7 +4237,7 @@ const FuzzState = struct {
         var state: FuzzState = undefined;
         state.allocator = allocator;
         state.file = file;
-        state.shadow = .{};
+        state.shadow = .empty;
         state.is_open = false;
         state.chunk_size = 1024;
         state.max_chunks = 32;
@@ -4930,7 +4930,7 @@ test "fuzz - RAF without merkle random operations" {
     var key: [aegis.aegis128l_KEYBYTES]u8 = undefined;
     rand.bytes(&key);
 
-    var shadow: std.ArrayListUnmanaged(u8) = .{};
+    var shadow: std.ArrayListUnmanaged(u8) = .empty;
     defer shadow.deinit(testing.allocator);
 
     var scratch_buf: [aegis.AEGIS128L_RAF_SCRATCH_SIZE(1024)]u8 align(aegis.AEGIS_RAF_SCRATCH_ALIGN) = undefined;
@@ -5072,7 +5072,7 @@ test "fuzz - aegis256 random operations with merkle" {
     var key: [aegis.aegis256_KEYBYTES]u8 = undefined;
     rand.bytes(&key);
 
-    var shadow: std.ArrayListUnmanaged(u8) = .{};
+    var shadow: std.ArrayListUnmanaged(u8) = .empty;
     defer shadow.deinit(testing.allocator);
 
     const max_chunks: u64 = 16;
