@@ -3,7 +3,7 @@
 
 typedef aes_block_t aegis_blocks[6];
 
-static void
+static inline void
 aegis256_init(const uint8_t *key, const uint8_t *nonce, aes_block_t *const state)
 {
     static CRYPTO_ALIGN(AES_BLOCK_LENGTH)
@@ -37,7 +37,7 @@ aegis256_init(const uint8_t *key, const uint8_t *nonce, aes_block_t *const state
     }
 }
 
-static void
+static inline void
 aegis256_mac(uint8_t *mac, size_t maclen, uint64_t adlen, uint64_t mlen, aes_block_t *const state)
 {
     aes_block_t tmp;
@@ -94,7 +94,7 @@ aegis256_squeeze_keystream(uint8_t *const dst, aes_block_t *const state)
     AES_BLOCK_STORE(dst, tmp);
 }
 
-static void
+static inline void
 aegis256_enc(uint8_t *const dst, const uint8_t *const src, aes_block_t *const state)
 {
     aes_block_t msg;
@@ -110,7 +110,7 @@ aegis256_enc(uint8_t *const dst, const uint8_t *const src, aes_block_t *const st
     aegis256_update(state, msg);
 }
 
-static void
+static inline void
 aegis256_dec(uint8_t *const dst, const uint8_t *const src, aes_block_t *const state)
 {
     aes_block_t msg;
@@ -125,7 +125,7 @@ aegis256_dec(uint8_t *const dst, const uint8_t *const src, aes_block_t *const st
     aegis256_update(state, msg);
 }
 
-static void
+static inline void
 aegis256_declast(uint8_t *const dst, const uint8_t *const src, size_t len, aes_block_t *const state)
 {
     uint8_t     pad[RATE];
