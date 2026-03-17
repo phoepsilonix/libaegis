@@ -463,8 +463,6 @@ state_init(aegis128x4_state *st_, const uint8_t *ad, size_t adlen, const uint8_t
                                ~(uintptr_t) (ALIGNMENT - 1));
     size_t i;
 
-    memcpy(blocks, st->blocks, sizeof blocks);
-
     COMPILER_ASSERT((sizeof *st) + ALIGNMENT <= sizeof *st_);
     st->mlen = 0;
     st->pos  = 0;

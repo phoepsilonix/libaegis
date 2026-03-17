@@ -348,8 +348,6 @@ state_init(aegis128l_state *st_, const uint8_t *ad, size_t adlen, const uint8_t 
     st->mlen = 0;
     st->pos  = 0;
 
-    memcpy(blocks, st->blocks, sizeof blocks);
-
     aegis128l_init(k, npub, blocks);
     for (i = 0; i + RATE <= adlen; i += RATE) {
         aegis128l_absorb(ad + i, blocks);
