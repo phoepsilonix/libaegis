@@ -251,7 +251,7 @@ The [aegis-aead GitHub organization](https://github.com/orgs/aegis-aead/reposito
 
 AEGIS is very fast on CPUs with parallel execution pipelines and AES support.
 
-The following results are derived from libaegis, which has been optimized primarily for portability and readability. Other implementations, such as `jasmin-aegis` or the Zig implementations, may demonstrate better performance.
+The following results are derived from libaegis, which has been optimized primarily for portability and readability. Other implementations, such as `aegis-jasmin` or the Zig implementations, may demonstrate better performance.
 
 ### Encryption (16 KB)
 
