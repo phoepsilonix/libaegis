@@ -217,7 +217,8 @@ The tree uses a flat buffer layout with configurable hash callbacks, so it works
 
 ## Bindings
 
-- [`aegis`](https://crates.io/crates/aegis) is a set of bindings for Rust.
+- [`aegis`](https://crates.io/crates/aegis) contains bindings for Rust.
+- [`pyaegis`](https://github.com/jedisct1/pyaegis) (`pip install pyaegis`) is a set of bindings for Python.
 - [`go-libaegis`](https://github.com/aegis-aead/go-libaegis) is a set of bindings for Go.
 
 ## Libaegis TLS users
@@ -228,7 +229,7 @@ The tree uses a flat buffer layout with configurable hash callbacks, so it works
 
 ## Other implementations
 
-[Other AEGIS implementations](https://github.com/cfrg/draft-irtf-cfrg-aegis-aead?tab=readme-ov-file#known-implementations) are also available for most programming languages.
+[Many other AEGIS implementations](https://github.com/cfrg/draft-irtf-cfrg-aegis-aead?tab=readme-ov-file#known-implementations) are also available for most programming languages.
 
 Recommended for applications specifically targeting environments without AES instructions: [aegis-bitsliced](https://github.com/aegis-aead/aegis-bitsliced).
 
