@@ -177,6 +177,38 @@ aegis128l_raf_close(&ctx);  // automatically calls sync
 
 The API requires pluggable I/O (`read_at`, `write_at`, `get_size`, `set_size`, `sync`) and RNG callbacks, making it usable with any storage backend. Callers provide a scratch buffer for internal use, enabling zero-allocation operation.
 
+To open an existing file, use `aegis_raf_probe()` to read the file's algorithm and chunk size, then allocate the right scratch buffer and call the matching `*_raf_open()`:
+
+```c
+aegis_raf_info info;
+aegis_raf_probe(&io, &info);  // reads alg_id, chunk_size, file_size
+
+// Use info.alg_id to select the variant and info.chunk_size to size the scratch buffer.
+// This example assumes AEGIS-128L with a known max chunk size of 4096:
+CRYPTO_ALIGN(64) uint8_t scratch_buf[AEGIS128L_RAF_SCRATCH_SIZE(4096)];
+aegis_raf_scratch scratch = { .buf = scratch_buf, .len = sizeof scratch_buf };
+aegis_raf_config cfg = { .scratch = &scratch };
+
+aegis128l_raf_ctx ctx;
+aegis128l_raf_open(&ctx, &io, &rng, &cfg, master_key);
+```
+
+#### Context-bound key derivation (optional)
+
+Applications that use the same master key across multiple RAF files or file families can derive context-bound subkeys with `aegis_raf_derive_master_key()`. Different contexts produce different RAF keys, isolating files without requiring separate master keys.
+
+```c
+uint8_t raf_key[16];
+aegis_raf_derive_master_key(raf_key, sizeof raf_key,
+                            app_master_key, sizeof app_master_key,
+                            (const uint8_t *) "my-context", 10);
+
+aegis128l_raf_create(&ctx, &io, &rng, &cfg, raf_key);
+// caller is responsible for zeroizing raf_key after use
+```
+
+The context can be up to 120 bytes for 128-bit key variants and 72 bytes for 256-bit variants. The wire format is unchanged -- context binding is purely a key-management feature. Opening a file requires the same context that was used to create it; a wrong or missing context fails header authentication just like a wrong key.
+
 #### Merkle tree (optional)
 
 Each chunk is already independently authenticated by its AEAD tag, so basic integrity is always guaranteed. The optional Merkle tree is a separate feature that maintains a live hash commitment over the entire file's plaintext content, updated incrementally as chunks are written or the file is truncated. This is useful when you need a single digest that represents the current state of the whole file, for instance to attest file contents to a remote party, detect out-of-band modifications (by comparing against a previously stored commitment), or anchor the file in an external data structure.
