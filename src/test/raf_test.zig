@@ -113,7 +113,8 @@ test "aegis128l_raf - create and basic write/read" {
     var key: [aegis.aegis128l_KEYBYTES]u8 = undefined;
     random.bytes(&key);
 
-    var scratch_buf: [aegis.AEGIS128L_RAF_SCRATCH_SIZE(4096)]u8 align(aegis.AEGIS_RAF_SCRATCH_ALIGN) = undefined;
+    var scratch_buf: [aegis.AEGIS128L_RAF_SCRATCH_SIZE(4096)]u8 align(aegis.AEGIS_RAF_SCRATCH_ALIGN) =
+        undefined;
     const scratch = aegis.aegis_raf_scratch{
         .buf = &scratch_buf,
         .len = scratch_buf.len,
@@ -164,7 +165,8 @@ test "aegis128l_raf - open existing file" {
     var key: [aegis.aegis128l_KEYBYTES]u8 = undefined;
     random.bytes(&key);
 
-    var scratch_buf: [aegis.AEGIS128L_RAF_SCRATCH_SIZE(4096)]u8 align(aegis.AEGIS_RAF_SCRATCH_ALIGN) = undefined;
+    var scratch_buf: [aegis.AEGIS128L_RAF_SCRATCH_SIZE(4096)]u8 align(aegis.AEGIS_RAF_SCRATCH_ALIGN) =
+        undefined;
     const scratch = aegis.aegis_raf_scratch{
         .buf = &scratch_buf,
         .len = scratch_buf.len,
@@ -220,7 +222,8 @@ test "aegis128l_raf - random access write" {
     var key: [aegis.aegis128l_KEYBYTES]u8 = undefined;
     random.bytes(&key);
 
-    var scratch_buf: [aegis.AEGIS128L_RAF_SCRATCH_SIZE(1024)]u8 align(aegis.AEGIS_RAF_SCRATCH_ALIGN) = undefined;
+    var scratch_buf: [aegis.AEGIS128L_RAF_SCRATCH_SIZE(1024)]u8 align(aegis.AEGIS_RAF_SCRATCH_ALIGN) =
+        undefined;
     const scratch = aegis.aegis_raf_scratch{
         .buf = &scratch_buf,
         .len = scratch_buf.len,
@@ -283,7 +286,8 @@ test "aegis128l_raf - truncate" {
     var key: [aegis.aegis128l_KEYBYTES]u8 = undefined;
     random.bytes(&key);
 
-    var scratch_buf: [aegis.AEGIS128L_RAF_SCRATCH_SIZE(1024)]u8 align(aegis.AEGIS_RAF_SCRATCH_ALIGN) = undefined;
+    var scratch_buf: [aegis.AEGIS128L_RAF_SCRATCH_SIZE(1024)]u8 align(aegis.AEGIS_RAF_SCRATCH_ALIGN) =
+        undefined;
     const scratch = aegis.aegis_raf_scratch{
         .buf = &scratch_buf,
         .len = scratch_buf.len,
@@ -334,7 +338,8 @@ test "aegis128l_raf - cross-chunk operations" {
     random.bytes(&key);
 
     const chunk_size: usize = 1024;
-    var scratch_buf: [aegis.AEGIS128L_RAF_SCRATCH_SIZE(chunk_size)]u8 align(aegis.AEGIS_RAF_SCRATCH_ALIGN) = undefined;
+    var scratch_buf: [aegis.AEGIS128L_RAF_SCRATCH_SIZE(chunk_size)]u8 align(aegis.AEGIS_RAF_SCRATCH_ALIGN) =
+        undefined;
     const scratch = aegis.aegis_raf_scratch{
         .buf = &scratch_buf,
         .len = scratch_buf.len,
@@ -380,7 +385,8 @@ test "aegis128l_raf - header tampering detection" {
     var key: [aegis.aegis128l_KEYBYTES]u8 = undefined;
     random.bytes(&key);
 
-    var scratch_buf: [aegis.AEGIS128L_RAF_SCRATCH_SIZE(4096)]u8 align(aegis.AEGIS_RAF_SCRATCH_ALIGN) = undefined;
+    var scratch_buf: [aegis.AEGIS128L_RAF_SCRATCH_SIZE(4096)]u8 align(aegis.AEGIS_RAF_SCRATCH_ALIGN) =
+        undefined;
     const scratch = aegis.aegis_raf_scratch{
         .buf = &scratch_buf,
         .len = scratch_buf.len,
@@ -425,7 +431,8 @@ test "aegis128l_raf - chunk tampering detection" {
     var key: [aegis.aegis128l_KEYBYTES]u8 = undefined;
     random.bytes(&key);
 
-    var scratch_buf: [aegis.AEGIS128L_RAF_SCRATCH_SIZE(1024)]u8 align(aegis.AEGIS_RAF_SCRATCH_ALIGN) = undefined;
+    var scratch_buf: [aegis.AEGIS128L_RAF_SCRATCH_SIZE(1024)]u8 align(aegis.AEGIS_RAF_SCRATCH_ALIGN) =
+        undefined;
     const scratch = aegis.aegis_raf_scratch{
         .buf = &scratch_buf,
         .len = scratch_buf.len,
@@ -481,7 +488,8 @@ test "aegis128l_raf - wrong key detection" {
     random.bytes(&key1);
     random.bytes(&key2);
 
-    var scratch_buf: [aegis.AEGIS128L_RAF_SCRATCH_SIZE(4096)]u8 align(aegis.AEGIS_RAF_SCRATCH_ALIGN) = undefined;
+    var scratch_buf: [aegis.AEGIS128L_RAF_SCRATCH_SIZE(4096)]u8 align(aegis.AEGIS_RAF_SCRATCH_ALIGN) =
+        undefined;
     const scratch = aegis.aegis_raf_scratch{
         .buf = &scratch_buf,
         .len = scratch_buf.len,
@@ -524,7 +532,8 @@ test "aegis256_raf - basic operations" {
     var key: [aegis.aegis256_KEYBYTES]u8 = undefined;
     random.bytes(&key);
 
-    var scratch_buf: [aegis.AEGIS256_RAF_SCRATCH_SIZE(4096)]u8 align(aegis.AEGIS_RAF_SCRATCH_ALIGN) = undefined;
+    var scratch_buf: [aegis.AEGIS256_RAF_SCRATCH_SIZE(4096)]u8 align(aegis.AEGIS_RAF_SCRATCH_ALIGN) =
+        undefined;
     const scratch = aegis.aegis_raf_scratch{
         .buf = &scratch_buf,
         .len = scratch_buf.len,
@@ -578,7 +587,8 @@ test "aegis_raf - algorithm mismatch detection" {
     @memcpy(key256[0..16], &key128);
     @memcpy(key256[16..32], &key128);
 
-    var scratch128_buf: [aegis.AEGIS128L_RAF_SCRATCH_SIZE(4096)]u8 align(aegis.AEGIS_RAF_SCRATCH_ALIGN) = undefined;
+    var scratch128_buf: [aegis.AEGIS128L_RAF_SCRATCH_SIZE(4096)]u8 align(aegis.AEGIS_RAF_SCRATCH_ALIGN) =
+        undefined;
     const scratch128 = aegis.aegis_raf_scratch{
         .buf = &scratch128_buf,
         .len = scratch128_buf.len,
@@ -602,7 +612,8 @@ test "aegis_raf - algorithm mismatch detection" {
 
     aegis.aegis128l_raf_close(&ctx128);
 
-    var scratch256_buf: [aegis.AEGIS256_RAF_SCRATCH_SIZE(4096)]u8 align(aegis.AEGIS_RAF_SCRATCH_ALIGN) = undefined;
+    var scratch256_buf: [aegis.AEGIS256_RAF_SCRATCH_SIZE(4096)]u8 align(aegis.AEGIS_RAF_SCRATCH_ALIGN) =
+        undefined;
     const scratch256 = aegis.aegis_raf_scratch{
         .buf = &scratch256_buf,
         .len = scratch256_buf.len,
@@ -628,7 +639,8 @@ test "aegis128l_raf - EOF behavior" {
     var key: [aegis.aegis128l_KEYBYTES]u8 = undefined;
     random.bytes(&key);
 
-    var scratch_buf: [aegis.AEGIS128L_RAF_SCRATCH_SIZE(4096)]u8 align(aegis.AEGIS_RAF_SCRATCH_ALIGN) = undefined;
+    var scratch_buf: [aegis.AEGIS128L_RAF_SCRATCH_SIZE(4096)]u8 align(aegis.AEGIS_RAF_SCRATCH_ALIGN) =
+        undefined;
     const scratch = aegis.aegis_raf_scratch{
         .buf = &scratch_buf,
         .len = scratch_buf.len,
@@ -673,7 +685,8 @@ test "aegis128l_raf - empty file" {
     var key: [aegis.aegis128l_KEYBYTES]u8 = undefined;
     random.bytes(&key);
 
-    var scratch_buf: [aegis.AEGIS128L_RAF_SCRATCH_SIZE(4096)]u8 align(aegis.AEGIS_RAF_SCRATCH_ALIGN) = undefined;
+    var scratch_buf: [aegis.AEGIS128L_RAF_SCRATCH_SIZE(4096)]u8 align(aegis.AEGIS_RAF_SCRATCH_ALIGN) =
+        undefined;
     const scratch = aegis.aegis_raf_scratch{
         .buf = &scratch_buf,
         .len = scratch_buf.len,
@@ -730,7 +743,8 @@ test "aegis128l_raf - create flags semantics" {
 
     var ctx: aegis.aegis128l_raf_ctx align(32) = undefined;
 
-    var scratch_buf: [aegis.AEGIS128L_RAF_SCRATCH_SIZE(4096)]u8 align(aegis.AEGIS_RAF_SCRATCH_ALIGN) = undefined;
+    var scratch_buf: [aegis.AEGIS128L_RAF_SCRATCH_SIZE(4096)]u8 align(aegis.AEGIS_RAF_SCRATCH_ALIGN) =
+        undefined;
     const scratch = aegis.aegis_raf_scratch{
         .buf = &scratch_buf,
         .len = scratch_buf.len,
@@ -781,7 +795,8 @@ test "aegis128l_raf - create without CREATE flag fails on empty file" {
     var key: [aegis.aegis128l_KEYBYTES]u8 = undefined;
     random.bytes(&key);
 
-    var scratch_buf: [aegis.AEGIS128L_RAF_SCRATCH_SIZE(4096)]u8 align(aegis.AEGIS_RAF_SCRATCH_ALIGN) = undefined;
+    var scratch_buf: [aegis.AEGIS128L_RAF_SCRATCH_SIZE(4096)]u8 align(aegis.AEGIS_RAF_SCRATCH_ALIGN) =
+        undefined;
     const scratch = aegis.aegis_raf_scratch{
         .buf = &scratch_buf,
         .len = scratch_buf.len,
@@ -807,7 +822,8 @@ test "aegis128l_raf - truncate grow within same chunk" {
     var key: [aegis.aegis128l_KEYBYTES]u8 = undefined;
     random.bytes(&key);
 
-    var scratch_buf: [aegis.AEGIS128L_RAF_SCRATCH_SIZE(1024)]u8 align(aegis.AEGIS_RAF_SCRATCH_ALIGN) = undefined;
+    var scratch_buf: [aegis.AEGIS128L_RAF_SCRATCH_SIZE(1024)]u8 align(aegis.AEGIS_RAF_SCRATCH_ALIGN) =
+        undefined;
     const scratch = aegis.aegis_raf_scratch{
         .buf = &scratch_buf,
         .len = scratch_buf.len,
@@ -866,7 +882,8 @@ test "aegis128l_raf - truncate grow across chunk boundaries" {
     random.bytes(&key);
 
     const chunk_size: usize = 1024;
-    var scratch_buf: [aegis.AEGIS128L_RAF_SCRATCH_SIZE(chunk_size)]u8 align(aegis.AEGIS_RAF_SCRATCH_ALIGN) = undefined;
+    var scratch_buf: [aegis.AEGIS128L_RAF_SCRATCH_SIZE(chunk_size)]u8 align(aegis.AEGIS_RAF_SCRATCH_ALIGN) =
+        undefined;
     const scratch = aegis.aegis_raf_scratch{
         .buf = &scratch_buf,
         .len = scratch_buf.len,
@@ -955,7 +972,8 @@ test "aegis128l_raf - shrink then grow within same chunk" {
     random.bytes(&key);
 
     const chunk_size: usize = 1024;
-    var scratch_buf: [aegis.AEGIS128L_RAF_SCRATCH_SIZE(chunk_size)]u8 align(aegis.AEGIS_RAF_SCRATCH_ALIGN) = undefined;
+    var scratch_buf: [aegis.AEGIS128L_RAF_SCRATCH_SIZE(chunk_size)]u8 align(aegis.AEGIS_RAF_SCRATCH_ALIGN) =
+        undefined;
     const scratch = aegis.aegis_raf_scratch{
         .buf = &scratch_buf,
         .len = scratch_buf.len,
@@ -1020,7 +1038,8 @@ test "aegis128l_raf - shrink then grow across chunk boundaries" {
     random.bytes(&key);
 
     const chunk_size: usize = 1024;
-    var scratch_buf: [aegis.AEGIS128L_RAF_SCRATCH_SIZE(chunk_size)]u8 align(aegis.AEGIS_RAF_SCRATCH_ALIGN) = undefined;
+    var scratch_buf: [aegis.AEGIS128L_RAF_SCRATCH_SIZE(chunk_size)]u8 align(aegis.AEGIS_RAF_SCRATCH_ALIGN) =
+        undefined;
     const scratch = aegis.aegis_raf_scratch{
         .buf = &scratch_buf,
         .len = scratch_buf.len,
@@ -1093,7 +1112,8 @@ test "aegis128l_raf - RNG failure during truncate grow" {
     random.bytes(&key);
 
     const chunk_size: usize = 1024;
-    var scratch_buf: [aegis.AEGIS128L_RAF_SCRATCH_SIZE(chunk_size)]u8 align(aegis.AEGIS_RAF_SCRATCH_ALIGN) = undefined;
+    var scratch_buf: [aegis.AEGIS128L_RAF_SCRATCH_SIZE(chunk_size)]u8 align(aegis.AEGIS_RAF_SCRATCH_ALIGN) =
+        undefined;
     const scratch = aegis.aegis_raf_scratch{
         .buf = &scratch_buf,
         .len = scratch_buf.len,
@@ -1210,7 +1230,8 @@ test "aegis128l_raf - misaligned scratch rejected" {
     var key: [aegis.aegis128l_KEYBYTES]u8 = undefined;
     random.bytes(&key);
 
-    var scratch_buf: [aegis.AEGIS128L_RAF_SCRATCH_SIZE(4096) + 64]u8 align(aegis.AEGIS_RAF_SCRATCH_ALIGN) = undefined;
+    var scratch_buf: [aegis.AEGIS128L_RAF_SCRATCH_SIZE(4096) + 64]u8 align(aegis.AEGIS_RAF_SCRATCH_ALIGN) =
+        undefined;
     const misaligned_scratch = aegis.aegis_raf_scratch{
         .buf = scratch_buf[1..].ptr,
         .len = aegis.AEGIS128L_RAF_SCRATCH_SIZE(4096),
@@ -1238,7 +1259,8 @@ test "aegis_raf_probe - basic functionality" {
     var key: [aegis.aegis128l_KEYBYTES]u8 = undefined;
     random.bytes(&key);
 
-    var scratch_buf: [aegis.AEGIS128L_RAF_SCRATCH_SIZE(4096)]u8 align(aegis.AEGIS_RAF_SCRATCH_ALIGN) = undefined;
+    var scratch_buf: [aegis.AEGIS128L_RAF_SCRATCH_SIZE(4096)]u8 align(aegis.AEGIS_RAF_SCRATCH_ALIGN) =
+        undefined;
     const scratch = aegis.aegis_raf_scratch{
         .buf = &scratch_buf,
         .len = scratch_buf.len,
@@ -1279,7 +1301,8 @@ test "aegis256_raf_probe - basic functionality" {
     var key: [aegis.aegis256_KEYBYTES]u8 = undefined;
     random.bytes(&key);
 
-    var scratch_buf: [aegis.AEGIS256_RAF_SCRATCH_SIZE(2048)]u8 align(aegis.AEGIS_RAF_SCRATCH_ALIGN) = undefined;
+    var scratch_buf: [aegis.AEGIS256_RAF_SCRATCH_SIZE(2048)]u8 align(aegis.AEGIS_RAF_SCRATCH_ALIGN) =
+        undefined;
     const scratch = aegis.aegis_raf_scratch{
         .buf = &scratch_buf,
         .len = scratch_buf.len,
@@ -1320,7 +1343,8 @@ test "aegis_raf_probe - invalid alg_id rejected" {
     var key: [aegis.aegis128l_KEYBYTES]u8 = undefined;
     random.bytes(&key);
 
-    var scratch_buf: [aegis.AEGIS128L_RAF_SCRATCH_SIZE(4096)]u8 align(aegis.AEGIS_RAF_SCRATCH_ALIGN) = undefined;
+    var scratch_buf: [aegis.AEGIS128L_RAF_SCRATCH_SIZE(4096)]u8 align(aegis.AEGIS_RAF_SCRATCH_ALIGN) =
+        undefined;
     const scratch = aegis.aegis_raf_scratch{
         .buf = &scratch_buf,
         .len = scratch_buf.len,
@@ -1354,7 +1378,8 @@ test "raf header byte-level layout" {
     var key: [aegis.aegis128l_KEYBYTES]u8 = undefined;
     random.bytes(&key);
 
-    var scratch_buf: [aegis.AEGIS128L_RAF_SCRATCH_SIZE(4096)]u8 align(aegis.AEGIS_RAF_SCRATCH_ALIGN) = undefined;
+    var scratch_buf: [aegis.AEGIS128L_RAF_SCRATCH_SIZE(4096)]u8 align(aegis.AEGIS_RAF_SCRATCH_ALIGN) =
+        undefined;
     const scratch = aegis.aegis_raf_scratch{
         .buf = &scratch_buf,
         .len = scratch_buf.len,
@@ -1428,7 +1453,8 @@ test "raf header - tampered version rejected by probe and open" {
     var key: [aegis.aegis128l_KEYBYTES]u8 = undefined;
     random.bytes(&key);
 
-    var scratch_buf: [aegis.AEGIS128L_RAF_SCRATCH_SIZE(4096)]u8 align(aegis.AEGIS_RAF_SCRATCH_ALIGN) = undefined;
+    var scratch_buf: [aegis.AEGIS128L_RAF_SCRATCH_SIZE(4096)]u8 align(aegis.AEGIS_RAF_SCRATCH_ALIGN) =
+        undefined;
     const scratch = aegis.aegis_raf_scratch{
         .buf = &scratch_buf,
         .len = scratch_buf.len,
@@ -1470,7 +1496,8 @@ test "raf header - tampered header_size rejected by probe and open" {
     var key: [aegis.aegis128l_KEYBYTES]u8 = undefined;
     random.bytes(&key);
 
-    var scratch_buf: [aegis.AEGIS128L_RAF_SCRATCH_SIZE(4096)]u8 align(aegis.AEGIS_RAF_SCRATCH_ALIGN) = undefined;
+    var scratch_buf: [aegis.AEGIS128L_RAF_SCRATCH_SIZE(4096)]u8 align(aegis.AEGIS_RAF_SCRATCH_ALIGN) =
+        undefined;
     const scratch = aegis.aegis_raf_scratch{
         .buf = &scratch_buf,
         .len = scratch_buf.len,
@@ -1532,7 +1559,8 @@ test "aegis256_raf_scratch_size - runtime helper matches macro" {
 test "aegis128l_raf_scratch_validate - validates correctly" {
     try testing.expectEqual(aegis.aegis_init(), 0);
 
-    var scratch_buf: [aegis.AEGIS128L_RAF_SCRATCH_SIZE(4096)]u8 align(aegis.AEGIS_RAF_SCRATCH_ALIGN) = undefined;
+    var scratch_buf: [aegis.AEGIS128L_RAF_SCRATCH_SIZE(4096)]u8 align(aegis.AEGIS_RAF_SCRATCH_ALIGN) =
+        undefined;
 
     const valid_scratch = aegis.aegis_raf_scratch{
         .buf = &scratch_buf,
@@ -1558,7 +1586,8 @@ test "aegis128l_raf - partial overwrite preserves trailing data" {
     var key: [aegis.aegis128l_KEYBYTES]u8 = undefined;
     random.bytes(&key);
 
-    var scratch_buf: [aegis.AEGIS128L_RAF_SCRATCH_SIZE(4096)]u8 align(aegis.AEGIS_RAF_SCRATCH_ALIGN) = undefined;
+    var scratch_buf: [aegis.AEGIS128L_RAF_SCRATCH_SIZE(4096)]u8 align(aegis.AEGIS_RAF_SCRATCH_ALIGN) =
+        undefined;
     const scratch = aegis.aegis_raf_scratch{
         .buf = &scratch_buf,
         .len = scratch_buf.len,
@@ -1587,7 +1616,8 @@ test "aegis128l_raf - partial overwrite preserves trailing data" {
     try testing.expectEqual(size, 8);
 
     const overwrite_data = "XX";
-    ret = aegis.aegis128l_raf_write(&ctx, &bytes_written, overwrite_data.ptr, overwrite_data.len, 4);
+    ret =
+        aegis.aegis128l_raf_write(&ctx, &bytes_written, overwrite_data.ptr, overwrite_data.len, 4);
     try testing.expectEqual(ret, 0);
     try testing.expectEqual(bytes_written, overwrite_data.len);
 
@@ -1614,7 +1644,8 @@ test "aegis128l_raf - partial overwrite preserves leading data" {
     var key: [aegis.aegis128l_KEYBYTES]u8 = undefined;
     random.bytes(&key);
 
-    var scratch_buf: [aegis.AEGIS128L_RAF_SCRATCH_SIZE(4096)]u8 align(aegis.AEGIS_RAF_SCRATCH_ALIGN) = undefined;
+    var scratch_buf: [aegis.AEGIS128L_RAF_SCRATCH_SIZE(4096)]u8 align(aegis.AEGIS_RAF_SCRATCH_ALIGN) =
+        undefined;
     const scratch = aegis.aegis_raf_scratch{
         .buf = &scratch_buf,
         .len = scratch_buf.len,
@@ -1642,7 +1673,8 @@ test "aegis128l_raf - partial overwrite preserves leading data" {
     try testing.expectEqual(size, 8);
 
     const overwrite_data = "XX";
-    ret = aegis.aegis128l_raf_write(&ctx, &bytes_written, overwrite_data.ptr, overwrite_data.len, 0);
+    ret =
+        aegis.aegis128l_raf_write(&ctx, &bytes_written, overwrite_data.ptr, overwrite_data.len, 0);
     try testing.expectEqual(ret, 0);
 
     ret = aegis.aegis128l_raf_get_size(&ctx, &size);
@@ -1668,7 +1700,8 @@ test "aegis128l_raf - multiple partial overwrites within chunk" {
     var key: [aegis.aegis128l_KEYBYTES]u8 = undefined;
     random.bytes(&key);
 
-    var scratch_buf: [aegis.AEGIS128L_RAF_SCRATCH_SIZE(4096)]u8 align(aegis.AEGIS_RAF_SCRATCH_ALIGN) = undefined;
+    var scratch_buf: [aegis.AEGIS128L_RAF_SCRATCH_SIZE(4096)]u8 align(aegis.AEGIS_RAF_SCRATCH_ALIGN) =
+        undefined;
     const scratch = aegis.aegis_raf_scratch{
         .buf = &scratch_buf,
         .len = scratch_buf.len,
@@ -1736,7 +1769,8 @@ test "aegis128l_raf - cross-chunk partial write preserves existing data" {
     random.bytes(&key);
 
     const chunk_size: usize = 1024;
-    var scratch_buf: [aegis.AEGIS128L_RAF_SCRATCH_SIZE(chunk_size)]u8 align(aegis.AEGIS_RAF_SCRATCH_ALIGN) = undefined;
+    var scratch_buf: [aegis.AEGIS128L_RAF_SCRATCH_SIZE(chunk_size)]u8 align(aegis.AEGIS_RAF_SCRATCH_ALIGN) =
+        undefined;
     const scratch = aegis.aegis_raf_scratch{
         .buf = &scratch_buf,
         .len = scratch_buf.len,
@@ -2005,7 +2039,8 @@ test "aegis_raf_merkle - null hash_commitment rejected by config_validate" {
         .hash_commitment = null,
     };
 
-    var scratch_buf: [aegis.AEGIS128L_RAF_SCRATCH_SIZE(1024)]u8 align(aegis.AEGIS_RAF_SCRATCH_ALIGN) = undefined;
+    var scratch_buf: [aegis.AEGIS128L_RAF_SCRATCH_SIZE(1024)]u8 align(aegis.AEGIS_RAF_SCRATCH_ALIGN) =
+        undefined;
     const scratch = aegis.aegis_raf_scratch{
         .buf = &scratch_buf,
         .len = scratch_buf.len,
@@ -2050,7 +2085,8 @@ test "aegis128l_raf_merkle - root changes on write" {
     const merkle_buf_size = aegis.aegis_raf_merkle_buffer_size(&merkle_cfg);
     try testing.expect(merkle_buf_size <= merkle_buf.len);
 
-    var scratch_buf: [aegis.AEGIS128L_RAF_SCRATCH_SIZE(1024)]u8 align(aegis.AEGIS_RAF_SCRATCH_ALIGN) = undefined;
+    var scratch_buf: [aegis.AEGIS128L_RAF_SCRATCH_SIZE(1024)]u8 align(aegis.AEGIS_RAF_SCRATCH_ALIGN) =
+        undefined;
     const scratch = aegis.aegis_raf_scratch{
         .buf = &scratch_buf,
         .len = scratch_buf.len,
@@ -2140,7 +2176,8 @@ test "aegis128l_raf_merkle - rebuild matches incremental" {
         .hash_commitment = xorHashCommitment,
     };
 
-    var scratch_buf: [aegis.AEGIS128L_RAF_SCRATCH_SIZE(1024)]u8 align(aegis.AEGIS_RAF_SCRATCH_ALIGN) = undefined;
+    var scratch_buf: [aegis.AEGIS128L_RAF_SCRATCH_SIZE(1024)]u8 align(aegis.AEGIS_RAF_SCRATCH_ALIGN) =
+        undefined;
     const scratch = aegis.aegis_raf_scratch{
         .buf = &scratch_buf,
         .len = scratch_buf.len,
@@ -2218,7 +2255,8 @@ test "aegis128l_raf_merkle - truncate shrink clears leaves" {
         .hash_commitment = xorHashCommitment,
     };
 
-    var scratch_buf: [aegis.AEGIS128L_RAF_SCRATCH_SIZE(1024)]u8 align(aegis.AEGIS_RAF_SCRATCH_ALIGN) = undefined;
+    var scratch_buf: [aegis.AEGIS128L_RAF_SCRATCH_SIZE(1024)]u8 align(aegis.AEGIS_RAF_SCRATCH_ALIGN) =
+        undefined;
     const scratch = aegis.aegis_raf_scratch{
         .buf = &scratch_buf,
         .len = scratch_buf.len,
@@ -2284,7 +2322,8 @@ test "aegis128l_raf_merkle - truncate within same chunk count rehashes" {
         .hash_commitment = xorHashCommitment,
     };
 
-    var scratch_buf: [aegis.AEGIS128L_RAF_SCRATCH_SIZE(1024)]u8 align(aegis.AEGIS_RAF_SCRATCH_ALIGN) = undefined;
+    var scratch_buf: [aegis.AEGIS128L_RAF_SCRATCH_SIZE(1024)]u8 align(aegis.AEGIS_RAF_SCRATCH_ALIGN) =
+        undefined;
     const scratch = aegis.aegis_raf_scratch{
         .buf = &scratch_buf,
         .len = scratch_buf.len,
@@ -2353,7 +2392,8 @@ test "aegis128l_raf_merkle - max_chunks exceeded fails" {
         .hash_commitment = xorHashCommitment,
     };
 
-    var scratch_buf: [aegis.AEGIS128L_RAF_SCRATCH_SIZE(1024)]u8 align(aegis.AEGIS_RAF_SCRATCH_ALIGN) = undefined;
+    var scratch_buf: [aegis.AEGIS128L_RAF_SCRATCH_SIZE(1024)]u8 align(aegis.AEGIS_RAF_SCRATCH_ALIGN) =
+        undefined;
     const scratch = aegis.aegis_raf_scratch{
         .buf = &scratch_buf,
         .len = scratch_buf.len,
@@ -2410,7 +2450,8 @@ test "aegis128l_raf_merkle - partial overwrite updates root" {
         .hash_commitment = xorHashCommitment,
     };
 
-    var scratch_buf: [aegis.AEGIS128L_RAF_SCRATCH_SIZE(1024)]u8 align(aegis.AEGIS_RAF_SCRATCH_ALIGN) = undefined;
+    var scratch_buf: [aegis.AEGIS128L_RAF_SCRATCH_SIZE(1024)]u8 align(aegis.AEGIS_RAF_SCRATCH_ALIGN) =
+        undefined;
     const scratch = aegis.aegis_raf_scratch{
         .buf = &scratch_buf,
         .len = scratch_buf.len,
@@ -2475,7 +2516,7 @@ test "aegis128l_raf_merkle - verify succeeds after rebuild" {
         .hash_commitment = xorHashCommitment,
     };
 
-    var scratch align(64) = [_]u8{0} ** 4096;
+    var scratch: [4096]u8 align(64) = @splat(0);
     const scratch_buf = aegis.aegis_raf_scratch{
         .buf = &scratch,
         .len = scratch.len,
@@ -2565,7 +2606,7 @@ test "aegis128l_raf_merkle - verify detects corruption" {
         .hash_commitment = xorHashCommitment,
     };
 
-    var scratch align(64) = [_]u8{0} ** 4096;
+    var scratch: [4096]u8 align(64) = @splat(0);
     const scratch_buf = aegis.aegis_raf_scratch{
         .buf = &scratch,
         .len = scratch.len,
@@ -2678,7 +2719,8 @@ test "aegis128l_raf_merkle - single chunk tree" {
     const merkle_buf_size = aegis.aegis_raf_merkle_buffer_size(&merkle_cfg);
     try testing.expectEqual(merkle_buf_size, MERKLE_HASH_LEN);
 
-    var scratch_buf: [aegis.AEGIS128L_RAF_SCRATCH_SIZE(1024)]u8 align(aegis.AEGIS_RAF_SCRATCH_ALIGN) = undefined;
+    var scratch_buf: [aegis.AEGIS128L_RAF_SCRATCH_SIZE(1024)]u8 align(aegis.AEGIS_RAF_SCRATCH_ALIGN) =
+        undefined;
     const scratch = aegis.aegis_raf_scratch{
         .buf = &scratch_buf,
         .len = scratch_buf.len,
@@ -2740,7 +2782,8 @@ test "aegis128l_raf_merkle - empty file operations" {
         .hash_commitment = xorHashCommitment,
     };
 
-    var scratch_buf: [aegis.AEGIS128L_RAF_SCRATCH_SIZE(1024)]u8 align(aegis.AEGIS_RAF_SCRATCH_ALIGN) = undefined;
+    var scratch_buf: [aegis.AEGIS128L_RAF_SCRATCH_SIZE(1024)]u8 align(aegis.AEGIS_RAF_SCRATCH_ALIGN) =
+        undefined;
     const scratch = aegis.aegis_raf_scratch{
         .buf = &scratch_buf,
         .len = scratch_buf.len,
@@ -2806,7 +2849,8 @@ test "aegis128l_raf_merkle - write spanning multiple chunks" {
         .hash_commitment = xorHashCommitment,
     };
 
-    var scratch_buf: [aegis.AEGIS128L_RAF_SCRATCH_SIZE(1024)]u8 align(aegis.AEGIS_RAF_SCRATCH_ALIGN) = undefined;
+    var scratch_buf: [aegis.AEGIS128L_RAF_SCRATCH_SIZE(1024)]u8 align(aegis.AEGIS_RAF_SCRATCH_ALIGN) =
+        undefined;
     const scratch = aegis.aegis_raf_scratch{
         .buf = &scratch_buf,
         .len = scratch_buf.len,
@@ -2902,7 +2946,8 @@ test "aegis128l_raf_merkle - write at chunk boundary" {
         .hash_commitment = xorHashCommitment,
     };
 
-    var scratch_buf: [aegis.AEGIS128L_RAF_SCRATCH_SIZE(1024)]u8 align(aegis.AEGIS_RAF_SCRATCH_ALIGN) = undefined;
+    var scratch_buf: [aegis.AEGIS128L_RAF_SCRATCH_SIZE(1024)]u8 align(aegis.AEGIS_RAF_SCRATCH_ALIGN) =
+        undefined;
     const scratch = aegis.aegis_raf_scratch{
         .buf = &scratch_buf,
         .len = scratch_buf.len,
@@ -2978,7 +3023,8 @@ test "aegis128l_raf_merkle - verify detects corruption in middle chunk" {
         .hash_commitment = xorHashCommitment,
     };
 
-    var scratch_buf: [aegis.AEGIS128L_RAF_SCRATCH_SIZE(1024)]u8 align(aegis.AEGIS_RAF_SCRATCH_ALIGN) = undefined;
+    var scratch_buf: [aegis.AEGIS128L_RAF_SCRATCH_SIZE(1024)]u8 align(aegis.AEGIS_RAF_SCRATCH_ALIGN) =
+        undefined;
     const scratch = aegis.aegis_raf_scratch{
         .buf = &scratch_buf,
         .len = scratch_buf.len,
@@ -3045,7 +3091,8 @@ test "aegis128l_raf_merkle - verify detects corruption in last chunk" {
         .hash_commitment = xorHashCommitment,
     };
 
-    var scratch_buf: [aegis.AEGIS128L_RAF_SCRATCH_SIZE(1024)]u8 align(aegis.AEGIS_RAF_SCRATCH_ALIGN) = undefined;
+    var scratch_buf: [aegis.AEGIS128L_RAF_SCRATCH_SIZE(1024)]u8 align(aegis.AEGIS_RAF_SCRATCH_ALIGN) =
+        undefined;
     const scratch = aegis.aegis_raf_scratch{
         .buf = &scratch_buf,
         .len = scratch_buf.len,
@@ -3114,7 +3161,8 @@ test "aegis128l_raf_merkle - verify detects parent and root tampering" {
     const merkle_tree_size = aegis.aegis_raf_merkle_buffer_size(&merkle_cfg);
     try testing.expect(merkle_tree_size <= merkle_buf.len);
 
-    var scratch_buf: [aegis.AEGIS128L_RAF_SCRATCH_SIZE(1024)]u8 align(aegis.AEGIS_RAF_SCRATCH_ALIGN) = undefined;
+    var scratch_buf: [aegis.AEGIS128L_RAF_SCRATCH_SIZE(1024)]u8 align(aegis.AEGIS_RAF_SCRATCH_ALIGN) =
+        undefined;
     const scratch = aegis.aegis_raf_scratch{
         .buf = &scratch_buf,
         .len = scratch_buf.len,
@@ -3192,7 +3240,8 @@ test "aegis128l_raf_merkle - odd tree supports max hash_len" {
     const merkle_tree_size = aegis.aegis_raf_merkle_buffer_size(&merkle_cfg);
     try testing.expect(merkle_tree_size <= merkle_buf.len);
 
-    var scratch_buf: [aegis.AEGIS128L_RAF_SCRATCH_SIZE(1024)]u8 align(aegis.AEGIS_RAF_SCRATCH_ALIGN) = undefined;
+    var scratch_buf: [aegis.AEGIS128L_RAF_SCRATCH_SIZE(1024)]u8 align(aegis.AEGIS_RAF_SCRATCH_ALIGN) =
+        undefined;
     const scratch = aegis.aegis_raf_scratch{
         .buf = &scratch_buf,
         .len = scratch_buf.len,
@@ -3250,7 +3299,8 @@ test "aegis128l_raf_merkle - hash_len above max is rejected" {
         .hash_commitment = variableHashCommitment,
     };
 
-    var scratch_buf: [aegis.AEGIS128L_RAF_SCRATCH_SIZE(1024)]u8 align(aegis.AEGIS_RAF_SCRATCH_ALIGN) = undefined;
+    var scratch_buf: [aegis.AEGIS128L_RAF_SCRATCH_SIZE(1024)]u8 align(aegis.AEGIS_RAF_SCRATCH_ALIGN) =
+        undefined;
     const scratch = aegis.aegis_raf_scratch{
         .buf = &scratch_buf,
         .len = scratch_buf.len,
@@ -3293,7 +3343,8 @@ test "aegis128l_raf_merkle - hash_len below min is rejected" {
         .hash_commitment = variableHashCommitment,
     };
 
-    var scratch_buf: [aegis.AEGIS128L_RAF_SCRATCH_SIZE(1024)]u8 align(aegis.AEGIS_RAF_SCRATCH_ALIGN) = undefined;
+    var scratch_buf: [aegis.AEGIS128L_RAF_SCRATCH_SIZE(1024)]u8 align(aegis.AEGIS_RAF_SCRATCH_ALIGN) =
+        undefined;
     const scratch = aegis.aegis_raf_scratch{
         .buf = &scratch_buf,
         .len = scratch_buf.len,
@@ -3336,7 +3387,8 @@ test "aegis128l_raf_merkle - truncate to zero clears all leaves" {
         .hash_commitment = xorHashCommitment,
     };
 
-    var scratch_buf: [aegis.AEGIS128L_RAF_SCRATCH_SIZE(1024)]u8 align(aegis.AEGIS_RAF_SCRATCH_ALIGN) = undefined;
+    var scratch_buf: [aegis.AEGIS128L_RAF_SCRATCH_SIZE(1024)]u8 align(aegis.AEGIS_RAF_SCRATCH_ALIGN) =
+        undefined;
     const scratch = aegis.aegis_raf_scratch{
         .buf = &scratch_buf,
         .len = scratch_buf.len,
@@ -3405,7 +3457,8 @@ test "aegis128l_raf_merkle - truncate preserves earlier chunks" {
         .hash_commitment = xorHashCommitment,
     };
 
-    var scratch_buf: [aegis.AEGIS128L_RAF_SCRATCH_SIZE(1024)]u8 align(aegis.AEGIS_RAF_SCRATCH_ALIGN) = undefined;
+    var scratch_buf: [aegis.AEGIS128L_RAF_SCRATCH_SIZE(1024)]u8 align(aegis.AEGIS_RAF_SCRATCH_ALIGN) =
+        undefined;
     const scratch = aegis.aegis_raf_scratch{
         .buf = &scratch_buf,
         .len = scratch_buf.len,
@@ -3475,7 +3528,8 @@ test "aegis128l_raf_merkle - truncate grow rebuild matches incremental" {
         .hash_commitment = xorHashCommitment,
     };
 
-    var scratch_buf: [aegis.AEGIS128L_RAF_SCRATCH_SIZE(1024)]u8 align(aegis.AEGIS_RAF_SCRATCH_ALIGN) = undefined;
+    var scratch_buf: [aegis.AEGIS128L_RAF_SCRATCH_SIZE(1024)]u8 align(aegis.AEGIS_RAF_SCRATCH_ALIGN) =
+        undefined;
     const scratch = aegis.aegis_raf_scratch{
         .buf = &scratch_buf,
         .len = scratch_buf.len,
@@ -3564,7 +3618,8 @@ test "aegis128l_raf_merkle - overwrite preserves tree consistency" {
         .hash_commitment = xorHashCommitment,
     };
 
-    var scratch_buf: [aegis.AEGIS128L_RAF_SCRATCH_SIZE(1024)]u8 align(aegis.AEGIS_RAF_SCRATCH_ALIGN) = undefined;
+    var scratch_buf: [aegis.AEGIS128L_RAF_SCRATCH_SIZE(1024)]u8 align(aegis.AEGIS_RAF_SCRATCH_ALIGN) =
+        undefined;
     const scratch = aegis.aegis_raf_scratch{
         .buf = &scratch_buf,
         .len = scratch_buf.len,
@@ -3634,7 +3689,8 @@ test "aegis128l_raf_merkle - non power of 2 chunk count" {
         .hash_commitment = xorHashCommitment,
     };
 
-    var scratch_buf: [aegis.AEGIS128L_RAF_SCRATCH_SIZE(1024)]u8 align(aegis.AEGIS_RAF_SCRATCH_ALIGN) = undefined;
+    var scratch_buf: [aegis.AEGIS128L_RAF_SCRATCH_SIZE(1024)]u8 align(aegis.AEGIS_RAF_SCRATCH_ALIGN) =
+        undefined;
     const scratch = aegis.aegis_raf_scratch{
         .buf = &scratch_buf,
         .len = scratch_buf.len,
@@ -3727,7 +3783,8 @@ test "aegis128l_raf_merkle - 3 max chunks odd tree" {
         .hash_commitment = xorHashCommitment,
     };
 
-    var scratch_buf: [aegis.AEGIS128L_RAF_SCRATCH_SIZE(1024)]u8 align(aegis.AEGIS_RAF_SCRATCH_ALIGN) = undefined;
+    var scratch_buf: [aegis.AEGIS128L_RAF_SCRATCH_SIZE(1024)]u8 align(aegis.AEGIS_RAF_SCRATCH_ALIGN) =
+        undefined;
     const scratch = aegis.aegis_raf_scratch{
         .buf = &scratch_buf,
         .len = scratch_buf.len,
@@ -3793,7 +3850,8 @@ test "aegis128l_raf_merkle - write extending file" {
         .hash_commitment = xorHashCommitment,
     };
 
-    var scratch_buf: [aegis.AEGIS128L_RAF_SCRATCH_SIZE(1024)]u8 align(aegis.AEGIS_RAF_SCRATCH_ALIGN) = undefined;
+    var scratch_buf: [aegis.AEGIS128L_RAF_SCRATCH_SIZE(1024)]u8 align(aegis.AEGIS_RAF_SCRATCH_ALIGN) =
+        undefined;
     const scratch = aegis.aegis_raf_scratch{
         .buf = &scratch_buf,
         .len = scratch_buf.len,
@@ -3880,7 +3938,8 @@ test "aegis128l_raf_merkle - different data different roots" {
         .hash_commitment = xorHashCommitment,
     };
 
-    var scratch_buf: [aegis.AEGIS128L_RAF_SCRATCH_SIZE(1024)]u8 align(aegis.AEGIS_RAF_SCRATCH_ALIGN) = undefined;
+    var scratch_buf: [aegis.AEGIS128L_RAF_SCRATCH_SIZE(1024)]u8 align(aegis.AEGIS_RAF_SCRATCH_ALIGN) =
+        undefined;
     const scratch = aegis.aegis_raf_scratch{
         .buf = &scratch_buf,
         .len = scratch_buf.len,
@@ -3946,7 +4005,8 @@ test "aegis128l_raf_merkle - single byte change changes root" {
         .hash_commitment = xorHashCommitment,
     };
 
-    var scratch_buf: [aegis.AEGIS128L_RAF_SCRATCH_SIZE(1024)]u8 align(aegis.AEGIS_RAF_SCRATCH_ALIGN) = undefined;
+    var scratch_buf: [aegis.AEGIS128L_RAF_SCRATCH_SIZE(1024)]u8 align(aegis.AEGIS_RAF_SCRATCH_ALIGN) =
+        undefined;
     const scratch = aegis.aegis_raf_scratch{
         .buf = &scratch_buf,
         .len = scratch_buf.len,
@@ -4010,7 +4070,8 @@ test "aegis256_raf_merkle - verify with different AEGIS variant" {
         .hash_commitment = xorHashCommitment,
     };
 
-    var scratch_buf: [aegis.AEGIS256_RAF_SCRATCH_SIZE(1024)]u8 align(aegis.AEGIS_RAF_SCRATCH_ALIGN) = undefined;
+    var scratch_buf: [aegis.AEGIS256_RAF_SCRATCH_SIZE(1024)]u8 align(aegis.AEGIS_RAF_SCRATCH_ALIGN) =
+        undefined;
     const scratch = aegis.aegis_raf_scratch{
         .buf = &scratch_buf,
         .len = scratch_buf.len,
@@ -4097,7 +4158,8 @@ test "aegis128l_raf_merkle - root commitment consistency" {
         .hash_commitment = xorHashCommitment,
     };
 
-    var scratch_buf: [aegis.AEGIS128L_RAF_SCRATCH_SIZE(1024)]u8 align(aegis.AEGIS_RAF_SCRATCH_ALIGN) = undefined;
+    var scratch_buf: [aegis.AEGIS128L_RAF_SCRATCH_SIZE(1024)]u8 align(aegis.AEGIS_RAF_SCRATCH_ALIGN) =
+        undefined;
     const scratch = aegis.aegis_raf_scratch{
         .buf = &scratch_buf,
         .len = scratch_buf.len,
@@ -4162,7 +4224,8 @@ test "aegis128l_raf_merkle - exact chunk size writes" {
     };
 
     const chunk_size = 1024;
-    var scratch_buf: [aegis.AEGIS128L_RAF_SCRATCH_SIZE(chunk_size)]u8 align(aegis.AEGIS_RAF_SCRATCH_ALIGN) = undefined;
+    var scratch_buf: [aegis.AEGIS128L_RAF_SCRATCH_SIZE(chunk_size)]u8 align(aegis.AEGIS_RAF_SCRATCH_ALIGN) =
+        undefined;
     const scratch = aegis.aegis_raf_scratch{
         .buf = &scratch_buf,
         .len = scratch_buf.len,
@@ -4292,7 +4355,8 @@ const FuzzState = struct {
     }
 
     fn reopen(self: *FuzzState) !void {
-        if (!self.is_open) return;
+        if (!self.is_open)
+            return;
 
         var old_root: [MERKLE_HASH_LEN]u8 = undefined;
         try testing.expectEqual(aegis.aegis128l_raf_merkle_commitment(&self.ctx, &old_root, MERKLE_HASH_LEN), 0);
@@ -4337,14 +4401,17 @@ const FuzzState = struct {
     }
 
     fn doWrite(self: *FuzzState, data: []const u8, offset: u64) !void {
-        if (!self.is_open) return;
+        if (!self.is_open)
+            return;
 
         const end = offset + data.len;
         const new_num_chunks = (end + self.chunk_size - 1) / self.chunk_size;
-        if (new_num_chunks > self.max_chunks) return;
+        if (new_num_chunks > self.max_chunks)
+            return;
 
         var bytes_written: usize = undefined;
-        const ret = aegis.aegis128l_raf_write(&self.ctx, &bytes_written, data.ptr, data.len, offset);
+        const ret =
+            aegis.aegis128l_raf_write(&self.ctx, &bytes_written, data.ptr, data.len, offset);
         try testing.expectEqual(ret, 0);
         try testing.expectEqual(bytes_written, data.len);
 
@@ -4361,8 +4428,10 @@ const FuzzState = struct {
     }
 
     fn doRead(self: *FuzzState) !void {
-        if (!self.is_open) return;
-        if (self.shadow.items.len == 0) return;
+        if (!self.is_open)
+            return;
+        if (self.shadow.items.len == 0)
+            return;
 
         var read_buf: [8192]u8 = undefined;
         const len = @min(self.shadow.items.len, read_buf.len);
@@ -4374,10 +4443,13 @@ const FuzzState = struct {
     }
 
     fn doTruncate(self: *FuzzState, new_size: u64) !void {
-        if (!self.is_open) return;
+        if (!self.is_open)
+            return;
 
-        const new_num_chunks = if (new_size == 0) 0 else (new_size + self.chunk_size - 1) / self.chunk_size;
-        if (new_num_chunks > self.max_chunks) return;
+        const new_num_chunks =
+            if (new_size == 0) 0 else (new_size + self.chunk_size - 1) / self.chunk_size;
+        if (new_num_chunks > self.max_chunks)
+            return;
 
         const ret = aegis.aegis128l_raf_truncate(&self.ctx, new_size);
         try testing.expectEqual(ret, 0);
@@ -4393,7 +4465,8 @@ const FuzzState = struct {
     }
 
     fn verifySize(self: *FuzzState) !void {
-        if (!self.is_open) return;
+        if (!self.is_open)
+            return;
         var size: u64 = undefined;
         const ret = aegis.aegis128l_raf_get_size(&self.ctx, &size);
         try testing.expectEqual(ret, 0);
@@ -4401,7 +4474,8 @@ const FuzzState = struct {
     }
 
     fn verifyMerkle(self: *FuzzState) !void {
-        if (!self.is_open) return;
+        if (!self.is_open)
+            return;
         const ret = aegis.aegis128l_raf_merkle_verify(&self.ctx, null);
         try testing.expectEqual(ret, 0);
     }
@@ -4453,7 +4527,8 @@ test "fuzz - random RAF operations with merkle" {
                 rand.bytes(buf[0..len]);
                 const cs = @as(u64, state.chunk_size);
                 const num_chunks = (state.shadow.items.len + cs - 1) / cs;
-                if (num_chunks < 2) continue;
+                if (num_chunks < 2)
+                    continue;
                 const boundary = rand.intRangeAtMost(u64, 1, num_chunks - 1) * cs;
                 const half: u64 = @intCast(len / 2);
                 const offset = if (boundary > half) boundary - half else 0;
@@ -4473,10 +4548,7 @@ test "fuzz - random RAF operations with merkle" {
                 rand.bytes(&buf);
                 const cs = @as(u64, state.chunk_size);
                 const num_chunks = (state.shadow.items.len + cs - 1) / cs;
-                const chunk_idx = if (num_chunks > 0)
-                    rand.intRangeLessThan(u64, 0, @min(num_chunks + 1, state.max_chunks))
-                else
-                    0;
+                const chunk_idx = if (num_chunks > 0) rand.intRangeLessThan(u64, 0, @min(num_chunks + 1, state.max_chunks)) else 0;
                 try state.doWrite(&buf, chunk_idx * cs);
             },
             .write_single_byte => {
@@ -4492,7 +4564,8 @@ test "fuzz - random RAF operations with merkle" {
             },
             .truncate_shrink => {
                 if (state.shadow.items.len > 0) {
-                    const new_size = rand.intRangeLessThan(u64, 0, @intCast(state.shadow.items.len));
+                    const new_size =
+                        rand.intRangeLessThan(u64, 0, @intCast(state.shadow.items.len));
                     try state.doTruncate(new_size);
                 }
             },
@@ -4602,7 +4675,8 @@ test "fuzz - gap fill stress with merkle" {
         const offset: u64 = @as(u64, @intCast(state.shadow.items.len)) + gap;
         const end = offset + 64;
         const max = @as(u64, state.max_chunks) * state.chunk_size;
-        if (end > max) continue;
+        if (end > max)
+            continue;
 
         var buf: [64]u8 = undefined;
         @memset(&buf, @as(u8, @truncate(i)));
@@ -4633,7 +4707,8 @@ test "fuzz - incremental vs rebuild consistency" {
         const len = rand.intRangeAtMost(usize, 1, buf.len);
         rand.bytes(buf[0..len]);
         const max_off = @as(u64, state.max_chunks) * state.chunk_size;
-        if (max_off <= len) continue;
+        if (max_off <= len)
+            continue;
         const offset = rand.intRangeLessThan(u64, 0, max_off - len);
         try state.doWrite(buf[0..len], offset);
     }
@@ -4670,7 +4745,8 @@ test "fuzz - write-read data integrity across reopens" {
         rand.bytes(buf[0..len]);
 
         const max_off = @as(u64, state.max_chunks) * state.chunk_size;
-        if (max_off <= len) continue;
+        if (max_off <= len)
+            continue;
         const offset = rand.intRangeLessThan(u64, 0, max_off - len);
         try state.doWrite(buf[0..len], offset);
         try state.doRead();
@@ -4707,19 +4783,8 @@ test "fuzz - truncate to every interesting boundary" {
 
     const cs: u64 = state.chunk_size;
     const boundaries = [_]u64{
-        0,
-        1,
-        cs / 2,
-        cs - 1,
-        cs,
-        cs + 1,
-        cs * 2 - 1,
-        cs * 2,
-        cs * 2 + 1,
-        cs * 3,
-        cs * 4,
-        cs * 5 - 1,
-        cs * 5,
+        0,          1,      cs / 2, cs - 1, cs, cs + 1, cs * 2 - 1, cs * 2, cs * 2 + 1, cs * 3, cs * 4,
+        cs * 5 - 1, cs * 5,
     };
 
     for (boundaries) |target| {
@@ -4800,7 +4865,8 @@ test "fuzz - odd max_chunks tree shapes" {
             var buf: [100]u8 = undefined;
             rand.bytes(&buf);
             const max_off = max_chunks * state.chunk_size;
-            if (max_off <= buf.len) continue;
+            if (max_off <= buf.len)
+                continue;
             const offset = rand.intRangeLessThan(u64, 0, max_off - buf.len);
             try state.doWrite(&buf, offset);
         }
@@ -4816,13 +4882,7 @@ test "fuzz - different hash lengths" {
     try testing.expectEqual(aegis.aegis_init(), 0);
 
     const hash_lens = [_]u32{
-        aegis.AEGIS_RAF_MERKLE_HASH_MIN,
-        12,
-        16,
-        24,
-        32,
-        48,
-        aegis.AEGIS_RAF_MERKLE_HASH_MAX,
+        aegis.AEGIS_RAF_MERKLE_HASH_MIN, 12, 16, 24, 32, 48, aegis.AEGIS_RAF_MERKLE_HASH_MAX,
     };
 
     for (hash_lens) |hash_len| {
@@ -4850,7 +4910,8 @@ test "fuzz - different hash lengths" {
         var key: [aegis.aegis128l_KEYBYTES]u8 = undefined;
         random.bytes(&key);
 
-        var scratch_buf: [aegis.AEGIS128L_RAF_SCRATCH_SIZE(1024)]u8 align(aegis.AEGIS_RAF_SCRATCH_ALIGN) = undefined;
+        var scratch_buf: [aegis.AEGIS128L_RAF_SCRATCH_SIZE(1024)]u8 align(aegis.AEGIS_RAF_SCRATCH_ALIGN) =
+            undefined;
         const scratch = aegis.aegis_raf_scratch{
             .buf = &scratch_buf,
             .len = scratch_buf.len,
@@ -4933,7 +4994,8 @@ test "fuzz - RAF without merkle random operations" {
     var shadow: std.ArrayListUnmanaged(u8) = .empty;
     defer shadow.deinit(testing.allocator);
 
-    var scratch_buf: [aegis.AEGIS128L_RAF_SCRATCH_SIZE(1024)]u8 align(aegis.AEGIS_RAF_SCRATCH_ALIGN) = undefined;
+    var scratch_buf: [aegis.AEGIS128L_RAF_SCRATCH_SIZE(1024)]u8 align(aegis.AEGIS_RAF_SCRATCH_ALIGN) =
+        undefined;
     const scratch = aegis.aegis_raf_scratch{
         .buf = &scratch_buf,
         .len = scratch_buf.len,
@@ -5049,7 +5111,8 @@ test "fuzz - cross-chunk write patterns" {
 
         const boundary = (offset / cs + 1) * cs;
         const write_offset = if (boundary > len / 2) boundary - len / 2 else 0;
-        if (write_offset + len > state.max_chunks * cs) continue;
+        if (write_offset + len > state.max_chunks * cs)
+            continue;
 
         try state.doWrite(buf[0..len], write_offset);
         try state.verifyMerkle();
@@ -5092,7 +5155,8 @@ test "fuzz - aegis256 random operations with merkle" {
         .hash_commitment = xorHashCommitment,
     };
 
-    var scratch_buf: [aegis.AEGIS256_RAF_SCRATCH_SIZE(1024)]u8 align(aegis.AEGIS_RAF_SCRATCH_ALIGN) = undefined;
+    var scratch_buf: [aegis.AEGIS256_RAF_SCRATCH_SIZE(1024)]u8 align(aegis.AEGIS_RAF_SCRATCH_ALIGN) =
+        undefined;
     const scratch = aegis.aegis_raf_scratch{
         .buf = &scratch_buf,
         .len = scratch_buf.len,
@@ -5119,7 +5183,8 @@ test "fuzz - aegis256 random operations with merkle" {
                 var buf: [300]u8 = undefined;
                 const len = rand.intRangeAtMost(usize, 1, buf.len);
                 rand.bytes(buf[0..len]);
-                if (max_bytes <= len) continue;
+                if (max_bytes <= len)
+                    continue;
                 const offset = rand.intRangeLessThan(u64, 0, max_bytes - len);
                 const end = offset + len;
 
@@ -5140,7 +5205,8 @@ test "fuzz - aegis256 random operations with merkle" {
             },
             2 => {
                 if (shadow.items.len > 0) {
-                    const new_size = rand.intRangeLessThan(u64, 0, @intCast(shadow.items.len + 1));
+                    const new_size =
+                        rand.intRangeLessThan(u64, 0, @intCast(shadow.items.len + 1));
                     ret = aegis.aegis256_raf_truncate(&ctx, new_size);
                     try testing.expectEqual(ret, 0);
                     shadow.shrinkRetainingCapacity(@intCast(new_size));
@@ -5200,7 +5266,8 @@ test "fuzz - write then corrupt then detect" {
             .hash_commitment = xorHashCommitment,
         };
 
-        var scratch_buf: [aegis.AEGIS128L_RAF_SCRATCH_SIZE(1024)]u8 align(aegis.AEGIS_RAF_SCRATCH_ALIGN) = undefined;
+        var scratch_buf: [aegis.AEGIS128L_RAF_SCRATCH_SIZE(1024)]u8 align(aegis.AEGIS_RAF_SCRATCH_ALIGN) =
+            undefined;
         const scratch = aegis.aegis_raf_scratch{
             .buf = &scratch_buf,
             .len = scratch_buf.len,
@@ -5257,7 +5324,8 @@ test "aegis128l_raf_merkle_commitment - returns 0 with merkle enabled" {
     var key: [aegis.aegis128l_KEYBYTES]u8 = undefined;
     random.bytes(&key);
 
-    var scratch_buf: [aegis.AEGIS128L_RAF_SCRATCH_SIZE(1024)]u8 align(aegis.AEGIS_RAF_SCRATCH_ALIGN) = undefined;
+    var scratch_buf: [aegis.AEGIS128L_RAF_SCRATCH_SIZE(1024)]u8 align(aegis.AEGIS_RAF_SCRATCH_ALIGN) =
+        undefined;
     const scratch = aegis.aegis_raf_scratch{ .buf = &scratch_buf, .len = scratch_buf.len };
 
     var merkle_buf: [4096]u8 = undefined;
@@ -5307,7 +5375,8 @@ test "aegis128l_raf_merkle_commitment - returns ENOTSUP without merkle" {
     var key: [aegis.aegis128l_KEYBYTES]u8 = undefined;
     random.bytes(&key);
 
-    var scratch_buf: [aegis.AEGIS128L_RAF_SCRATCH_SIZE(1024)]u8 align(aegis.AEGIS_RAF_SCRATCH_ALIGN) = undefined;
+    var scratch_buf: [aegis.AEGIS128L_RAF_SCRATCH_SIZE(1024)]u8 align(aegis.AEGIS_RAF_SCRATCH_ALIGN) =
+        undefined;
     const scratch = aegis.aegis_raf_scratch{ .buf = &scratch_buf, .len = scratch_buf.len };
 
     const cfg = aegis.aegis_raf_config{
@@ -5369,7 +5438,8 @@ test "aegis128l_raf_merkle_commitment - bound to file identity" {
         .hash_commitment = xorHashCommitment,
     };
 
-    var scratch_buf: [aegis.AEGIS128L_RAF_SCRATCH_SIZE(1024)]u8 align(aegis.AEGIS_RAF_SCRATCH_ALIGN) = undefined;
+    var scratch_buf: [aegis.AEGIS128L_RAF_SCRATCH_SIZE(1024)]u8 align(aegis.AEGIS_RAF_SCRATCH_ALIGN) =
+        undefined;
     const scratch = aegis.aegis_raf_scratch{
         .buf = &scratch_buf,
         .len = scratch_buf.len,
@@ -5426,7 +5496,8 @@ test "aegis128l_raf - open reads header exactly once" {
     var key: [aegis.aegis128l_KEYBYTES]u8 = undefined;
     random.bytes(&key);
 
-    var scratch_buf: [aegis.AEGIS128L_RAF_SCRATCH_SIZE(1024)]u8 align(aegis.AEGIS_RAF_SCRATCH_ALIGN) = undefined;
+    var scratch_buf: [aegis.AEGIS128L_RAF_SCRATCH_SIZE(1024)]u8 align(aegis.AEGIS_RAF_SCRATCH_ALIGN) =
+        undefined;
     const scratch = aegis.aegis_raf_scratch{
         .buf = &scratch_buf,
         .len = scratch_buf.len,
@@ -5531,7 +5602,8 @@ test "aegis128l_raf_merkle - verify with max_chunks 1 and one chunk" {
         .hash_commitment = xorHashCommitment,
     };
 
-    var scratch_buf: [aegis.AEGIS128L_RAF_SCRATCH_SIZE(1024)]u8 align(aegis.AEGIS_RAF_SCRATCH_ALIGN) = undefined;
+    var scratch_buf: [aegis.AEGIS128L_RAF_SCRATCH_SIZE(1024)]u8 align(aegis.AEGIS_RAF_SCRATCH_ALIGN) =
+        undefined;
     const scratch = aegis.aegis_raf_scratch{
         .buf = &scratch_buf,
         .len = scratch_buf.len,
@@ -5612,7 +5684,8 @@ test "aegis128l_raf_merkle - verify with max_chunks 1 and empty file" {
         .hash_commitment = xorHashCommitment,
     };
 
-    var scratch_buf: [aegis.AEGIS128L_RAF_SCRATCH_SIZE(1024)]u8 align(aegis.AEGIS_RAF_SCRATCH_ALIGN) = undefined;
+    var scratch_buf: [aegis.AEGIS128L_RAF_SCRATCH_SIZE(1024)]u8 align(aegis.AEGIS_RAF_SCRATCH_ALIGN) =
+        undefined;
     const scratch = aegis.aegis_raf_scratch{
         .buf = &scratch_buf,
         .len = scratch_buf.len,
@@ -5643,4 +5716,273 @@ test "aegis128l_raf_merkle - verify with max_chunks 1 and empty file" {
     try testing.expectEqual(ret, 0);
 
     aegis.aegis128l_raf_close(&ctx);
+}
+
+test "aegis_raf_derive_master_key - 128-bit KAT" {
+    const master_key = [16]u8{ 0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f };
+    const app_ctx = "test-context";
+    const expected = [16]u8{
+        0xfb, 0x80, 0x07, 0x2c, 0x5a, 0x6f, 0x1c, 0xdd,
+        0xc6, 0xe9, 0x7b, 0x35, 0xed, 0x1f, 0x3b, 0xf3,
+    };
+
+    var out: [16]u8 = undefined;
+    const ret = aegis.aegis_raf_derive_master_key(&out, out.len, &master_key, master_key.len, app_ctx, app_ctx.len);
+    try testing.expectEqual(ret, 0);
+    try testing.expectEqualSlices(u8, &expected, &out);
+}
+
+test "aegis_raf_derive_master_key - 256-bit KAT" {
+    const master_key = [32]u8{ 0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f, 0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18, 0x19, 0x1a, 0x1b, 0x1c, 0x1d, 0x1e, 0x1f };
+    const app_ctx = "test-context";
+    const expected = [32]u8{
+        0xfe, 0xe2, 0xd3, 0xcc, 0x58, 0xc6, 0x9d, 0x8f, 0x43, 0xfd, 0x7b,
+        0x4e, 0x33, 0xea, 0xec, 0x00, 0x53, 0x53, 0x96, 0x85, 0xc7, 0xe2,
+        0x84, 0xe6, 0xe1, 0x2e, 0xe9, 0xc4, 0xf4, 0x23, 0xd1, 0x36,
+    };
+
+    var out: [32]u8 = undefined;
+    const ret = aegis.aegis_raf_derive_master_key(&out, out.len, &master_key, master_key.len, app_ctx, app_ctx.len);
+    try testing.expectEqual(ret, 0);
+    try testing.expectEqualSlices(u8, &expected, &out);
+}
+
+test "aegis_raf_derive_master_key - empty context produces subkey" {
+    const master_key = [16]u8{ 0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f };
+    const expected = [16]u8{
+        0x9b, 0x8e, 0x6d, 0xdb, 0x09, 0xc9, 0xeb, 0x01,
+        0x37, 0x88, 0x8c, 0xa2, 0xa3, 0x66, 0xfd, 0xd0,
+    };
+
+    var out: [16]u8 = undefined;
+    const ret =
+        aegis.aegis_raf_derive_master_key(&out, out.len, &master_key, master_key.len, null, 0);
+    try testing.expectEqual(ret, 0);
+    try testing.expectEqualSlices(u8, &expected, &out);
+
+    try testing.expect(!std.mem.eql(u8, &out, &master_key));
+}
+
+test "aegis_raf_derive_master_key - different contexts produce different keys" {
+    const master_key = [16]u8{ 0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f };
+
+    var out_a: [16]u8 = undefined;
+    var out_b: [16]u8 = undefined;
+
+    try testing.expectEqual(aegis.aegis_raf_derive_master_key(&out_a, 16, &master_key, 16, "context-a", 9), 0);
+    try testing.expectEqual(aegis.aegis_raf_derive_master_key(&out_b, 16, &master_key, 16, "context-b", 9), 0);
+
+    try testing.expect(!std.mem.eql(u8, &out_a, &out_b));
+}
+
+test "aegis_raf_derive_master_key - same inputs are deterministic" {
+    const master_key = [16]u8{ 0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f };
+
+    var out1: [16]u8 = undefined;
+    var out2: [16]u8 = undefined;
+
+    try testing.expectEqual(aegis.aegis_raf_derive_master_key(&out1, 16, &master_key, 16, "ctx", 3), 0);
+    try testing.expectEqual(aegis.aegis_raf_derive_master_key(&out2, 16, &master_key, 16, "ctx", 3), 0);
+
+    try testing.expectEqualSlices(u8, &out1, &out2);
+}
+
+test "aegis_raf_derive_master_key - invalid arguments" {
+    var master_key: [16]u8 = undefined;
+    var out: [16]u8 = undefined;
+
+    try testing.expectEqual(aegis.aegis_raf_derive_master_key(null, 16, &master_key, 16, null, 0), -1);
+    try testing.expectEqual(aegis.aegis_raf_derive_master_key(&out, 16, null, 16, null, 0), -1);
+    try testing.expectEqual(aegis.aegis_raf_derive_master_key(&out, 8, &master_key, 8, null, 0), -1);
+    try testing.expectEqual(aegis.aegis_raf_derive_master_key(&out, 16, &master_key, 32, null, 0), -1);
+    try testing.expectEqual(aegis.aegis_raf_derive_master_key(&out, 16, &master_key, 16, null, 5), -1);
+}
+
+test "aegis128l_raf - derive_master_key integration: same context opens" {
+    try testing.expectEqual(aegis.aegis_init(), 0);
+
+    var file = MemoryFile.init(testing.allocator);
+    defer file.deinit();
+
+    const master_key = [16]u8{ 0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18, 0x19, 0x1a, 0x1b, 0x1c, 0x1d, 0x1e, 0x1f };
+    const app_ctx = "my-app-context";
+
+    var derived: [16]u8 = undefined;
+    try testing.expectEqual(aegis.aegis_raf_derive_master_key(&derived, 16, &master_key, 16, app_ctx, app_ctx.len), 0);
+
+    var scratch_buf: [aegis.AEGIS128L_RAF_SCRATCH_SIZE(4096)]u8 align(aegis.AEGIS_RAF_SCRATCH_ALIGN) =
+        undefined;
+    const scratch = aegis.aegis_raf_scratch{
+        .buf = &scratch_buf,
+        .len = scratch_buf.len,
+    };
+
+    const create_cfg = aegis.aegis_raf_config{
+        .chunk_size = 4096,
+        .flags = aegis.AEGIS_RAF_CREATE,
+        .scratch = &scratch,
+    };
+
+    var ctx: aegis.aegis128l_raf_ctx align(32) = undefined;
+    try testing.expectEqual(aegis.aegis128l_raf_create(&ctx, &file.io(), &rng(), &create_cfg, &derived), 0);
+
+    const test_data = "context-bound data";
+    var bytes_written: usize = undefined;
+    try testing.expectEqual(aegis.aegis128l_raf_write(&ctx, &bytes_written, test_data.ptr, test_data.len, 0), 0);
+    aegis.aegis128l_raf_close(&ctx);
+
+    var derived2: [16]u8 = undefined;
+    try testing.expectEqual(aegis.aegis_raf_derive_master_key(&derived2, 16, &master_key, 16, app_ctx, app_ctx.len), 0);
+
+    const open_cfg = aegis.aegis_raf_config{
+        .chunk_size = 4096,
+        .flags = 0,
+        .scratch = &scratch,
+    };
+
+    try testing.expectEqual(aegis.aegis128l_raf_open(&ctx, &file.io(), &rng(), &open_cfg, &derived2), 0);
+
+    var read_buf: [64]u8 = undefined;
+    var bytes_read: usize = undefined;
+    try testing.expectEqual(aegis.aegis128l_raf_read(&ctx, &read_buf, &bytes_read, test_data.len, 0), 0);
+    try testing.expectEqualSlices(u8, test_data, read_buf[0..bytes_read]);
+
+    aegis.aegis128l_raf_close(&ctx);
+}
+
+test "aegis128l_raf - derive_master_key integration: different context fails open" {
+    try testing.expectEqual(aegis.aegis_init(), 0);
+
+    var file = MemoryFile.init(testing.allocator);
+    defer file.deinit();
+
+    const master_key = [16]u8{ 0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18, 0x19, 0x1a, 0x1b, 0x1c, 0x1d, 0x1e, 0x1f };
+
+    var derived_a: [16]u8 = undefined;
+    try testing.expectEqual(aegis.aegis_raf_derive_master_key(&derived_a, 16, &master_key, 16, "context-a", 9), 0);
+
+    var scratch_buf: [aegis.AEGIS128L_RAF_SCRATCH_SIZE(4096)]u8 align(aegis.AEGIS_RAF_SCRATCH_ALIGN) =
+        undefined;
+    const scratch = aegis.aegis_raf_scratch{
+        .buf = &scratch_buf,
+        .len = scratch_buf.len,
+    };
+
+    const create_cfg = aegis.aegis_raf_config{
+        .chunk_size = 4096,
+        .flags = aegis.AEGIS_RAF_CREATE,
+        .scratch = &scratch,
+    };
+
+    var ctx: aegis.aegis128l_raf_ctx align(32) = undefined;
+    try testing.expectEqual(aegis.aegis128l_raf_create(&ctx, &file.io(), &rng(), &create_cfg, &derived_a), 0);
+
+    const test_data = "context-bound data";
+    var bytes_written: usize = undefined;
+    try testing.expectEqual(aegis.aegis128l_raf_write(&ctx, &bytes_written, test_data.ptr, test_data.len, 0), 0);
+    aegis.aegis128l_raf_close(&ctx);
+
+    var derived_b: [16]u8 = undefined;
+    try testing.expectEqual(aegis.aegis_raf_derive_master_key(&derived_b, 16, &master_key, 16, "context-b", 9), 0);
+
+    const open_cfg = aegis.aegis_raf_config{
+        .chunk_size = 4096,
+        .flags = 0,
+        .scratch = &scratch,
+    };
+
+    try testing.expectEqual(aegis.aegis128l_raf_open(&ctx, &file.io(), &rng(), &open_cfg, &derived_b), -1);
+}
+
+test "aegis128l_raf - derive_master_key integration: raw key fails open" {
+    try testing.expectEqual(aegis.aegis_init(), 0);
+
+    var file = MemoryFile.init(testing.allocator);
+    defer file.deinit();
+
+    const master_key = [16]u8{ 0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18, 0x19, 0x1a, 0x1b, 0x1c, 0x1d, 0x1e, 0x1f };
+
+    var derived: [16]u8 = undefined;
+    try testing.expectEqual(aegis.aegis_raf_derive_master_key(&derived, 16, &master_key, 16, "my-ctx", 6), 0);
+
+    var scratch_buf: [aegis.AEGIS128L_RAF_SCRATCH_SIZE(4096)]u8 align(aegis.AEGIS_RAF_SCRATCH_ALIGN) =
+        undefined;
+    const scratch = aegis.aegis_raf_scratch{
+        .buf = &scratch_buf,
+        .len = scratch_buf.len,
+    };
+
+    const create_cfg = aegis.aegis_raf_config{
+        .chunk_size = 4096,
+        .flags = aegis.AEGIS_RAF_CREATE,
+        .scratch = &scratch,
+    };
+
+    var ctx: aegis.aegis128l_raf_ctx align(32) = undefined;
+    try testing.expectEqual(aegis.aegis128l_raf_create(&ctx, &file.io(), &rng(), &create_cfg, &derived), 0);
+    aegis.aegis128l_raf_close(&ctx);
+
+    const open_cfg = aegis.aegis_raf_config{
+        .chunk_size = 4096,
+        .flags = 0,
+        .scratch = &scratch,
+    };
+
+    try testing.expectEqual(aegis.aegis128l_raf_open(&ctx, &file.io(), &rng(), &open_cfg, &master_key), -1);
+}
+
+test "aegis128l_raf - derive_master_key integration: probe unchanged" {
+    try testing.expectEqual(aegis.aegis_init(), 0);
+
+    var file = MemoryFile.init(testing.allocator);
+    defer file.deinit();
+
+    const master_key = [16]u8{ 0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18, 0x19, 0x1a, 0x1b, 0x1c, 0x1d, 0x1e, 0x1f };
+
+    var derived: [16]u8 = undefined;
+    try testing.expectEqual(aegis.aegis_raf_derive_master_key(&derived, 16, &master_key, 16, "probe-ctx", 9), 0);
+
+    var scratch_buf: [aegis.AEGIS128L_RAF_SCRATCH_SIZE(4096)]u8 align(aegis.AEGIS_RAF_SCRATCH_ALIGN) =
+        undefined;
+    const scratch = aegis.aegis_raf_scratch{
+        .buf = &scratch_buf,
+        .len = scratch_buf.len,
+    };
+
+    const create_cfg = aegis.aegis_raf_config{
+        .chunk_size = 4096,
+        .flags = aegis.AEGIS_RAF_CREATE,
+        .scratch = &scratch,
+    };
+
+    var ctx: aegis.aegis128l_raf_ctx align(32) = undefined;
+    try testing.expectEqual(aegis.aegis128l_raf_create(&ctx, &file.io(), &rng(), &create_cfg, &derived), 0);
+    aegis.aegis128l_raf_close(&ctx);
+
+    var info: aegis.aegis_raf_info = undefined;
+    try testing.expectEqual(aegis.aegis_raf_probe(&file.io(), &info), 0);
+    try testing.expectEqual(info.alg_id, aegis.AEGIS_RAF_ALG_128L);
+    try testing.expectEqual(info.chunk_size, 4096);
+    try testing.expectEqual(info.file_size, 0);
+}
+
+test "aegis_raf_derive_master_key - context length limits" {
+    var master_key_16: [16]u8 = undefined;
+    @memset(&master_key_16, 0x42);
+    var master_key_32: [32]u8 = undefined;
+    @memset(&master_key_32, 0x42);
+
+    var context_buf: [121]u8 = undefined;
+    @memset(&context_buf, 0xaa);
+
+    var out16: [16]u8 = undefined;
+    var out32: [32]u8 = undefined;
+
+    try testing.expectEqual(aegis.aegis_raf_derive_master_key(&out16, 16, &master_key_16, 16, &context_buf, 120), 0);
+    try testing.expectEqual(aegis.aegis_raf_derive_master_key(&out16, 16, &master_key_16, 16, &context_buf, 121), -1);
+
+    try testing.expectEqual(aegis.aegis_raf_derive_master_key(&out32, 32, &master_key_32, 32, &context_buf, 72), 0);
+    try testing.expectEqual(aegis.aegis_raf_derive_master_key(&out32, 32, &master_key_32, 32, &context_buf, 73), -1);
+
+    try testing.expectEqual(aegis.aegis_raf_derive_master_key(&out16, 16, &master_key_16, 16, &context_buf, std.math.maxInt(usize)), -1);
 }
