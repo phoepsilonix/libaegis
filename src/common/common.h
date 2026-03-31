@@ -24,8 +24,6 @@ static int errno;
 #ifdef __ANDROID_API__
 #    if __ANDROID_API__ < 18
 #        undef HAVE_GETAUXVAL
-// Only use the legacy cpu-features.h on very old Android (< API 18)
-// where getauxval is not available. Modern Android uses getauxval/AT_HWCAP.
 #        define HAVE_ANDROID_GETCPUFEATURES
 #    endif
 #endif
