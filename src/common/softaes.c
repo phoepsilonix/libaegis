@@ -209,7 +209,7 @@ softaes_block_encrypt(const SoftAesBlock block, const SoftAesBlock rk)
 #else
 
 /*
- * Note: Memjam requires SMT, but virtually all CPUs implementing SMT have AES-NI, so software AES is not used.
+ * Note: Memjam and Teejam require SMT, but virtually all CPUs implementing SMT have AES-NI, so software AES is not used.
  */
 
 uint32_t _aes_lut[256] __attribute__((visibility("hidden"))) = {
