@@ -104,19 +104,33 @@ pub fn build(b: *std.Build) void {
         .source_dir = b.path("src/include"),
     });
 
-    // Creates a step for unit testing. This only builds the test executable
-    // but does not run it.
+    const aegis_h = b.addTranslateC(.{
+        .root_source_file = b.path("src/include/aegis.h"),
+        .target = target,
+        .optimize = optimize,
+    });
+    aegis_h.addIncludePath(b.path("src/include"));
+    const aegis_mod = aegis_h.createModule();
+
+    const keccak_h = b.addTranslateC(.{
+        .root_source_file = b.path("src/common/keccak.h"),
+        .target = target,
+        .optimize = optimize,
+    });
+    keccak_h.addIncludePath(b.path("src/common"));
+    const keccak_mod = keccak_h.createModule();
+
     const main_tests = b.addTest(.{
         .root_module = b.createModule(.{
             .root_source_file = b.path("src/test/main.zig"),
             .target = target,
             .optimize = optimize,
+            .imports = &.{
+                .{ .name = "aegis", .module = aegis_mod },
+            },
         }),
     });
-
-    main_tests.root_module.addIncludePath(b.path("src/include"));
     main_tests.root_module.linkLibrary(lib);
-
     const run_main_tests = b.addRunArtifact(main_tests);
 
     const raf_tests = b.addTest(.{
@@ -124,12 +138,12 @@ pub fn build(b: *std.Build) void {
             .root_source_file = b.path("src/test/raf_test.zig"),
             .target = target,
             .optimize = optimize,
+            .imports = &.{
+                .{ .name = "aegis", .module = aegis_mod },
+            },
         }),
     });
-
-    raf_tests.root_module.addIncludePath(b.path("src/include"));
     raf_tests.root_module.linkLibrary(lib);
-
     const run_raf_tests = b.addRunArtifact(raf_tests);
 
     const kdf_tests = b.addTest(.{
@@ -137,9 +151,11 @@ pub fn build(b: *std.Build) void {
             .root_source_file = b.path("src/test/kdf_test.zig"),
             .target = target,
             .optimize = optimize,
+            .imports = &.{
+                .{ .name = "kdf", .module = keccak_mod },
+            },
         }),
     });
-    kdf_tests.root_module.addIncludePath(b.path("src/common"));
     kdf_tests.root_module.linkLibrary(lib);
     const run_kdf_tests = b.addRunArtifact(kdf_tests);
 
@@ -155,9 +171,11 @@ pub fn build(b: *std.Build) void {
                 .root_source_file = b.path("src/test/benchmark.zig"),
                 .target = target,
                 .optimize = optimize,
+                .imports = &.{
+                    .{ .name = "aegis", .module = aegis_mod },
+                },
             }),
         });
-        benchmark.root_module.addIncludePath(b.path("src/include"));
         benchmark.root_module.linkLibrary(lib);
         b.installArtifact(benchmark);
     }

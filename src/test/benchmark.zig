@@ -1,4 +1,4 @@
-const aegis = @cImport(@cInclude("aegis.h"));
+const aegis = @import("aegis");
 const std = @import("std");
 const Io = std.Io;
 const mem = std.mem;

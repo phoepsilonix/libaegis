@@ -1,4 +1,4 @@
-const kdf = @cImport(@cInclude("keccak.h"));
+const kdf = @import("kdf");
 const std = @import("std");
 const testing = std.testing;
 
