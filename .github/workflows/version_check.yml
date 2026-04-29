@@ -16,8 +16,10 @@ jobs:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
 
       - name: Version check
+        env:
+          TAG_NAME: ${{ github.ref_name }}
         run: |
-            grep -E 'const version =' build.zig | grep -E '"${{  github.ref_name }}"' || exit 78
+            grep -E 'const version =' build.zig | grep -E "\"${TAG_NAME}\"" || exit 78
             echo "Zig build version check passed."
-            grep -E 'project\(aegis.*VERSION ${{ github.ref_name }}.*\)' CMakeLists.txt || exit 78
+            grep -E "project\(aegis.*VERSION ${TAG_NAME}.*\)" CMakeLists.txt || exit 78
             echo "CMake version check passed."
