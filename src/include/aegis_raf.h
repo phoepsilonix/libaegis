@@ -332,6 +332,15 @@ int aegis_raf_derive_master_key(uint8_t *out, size_t out_len, const uint8_t *mas
  *   - AEGIS-256, AEGIS-256X2, AEGIS-256X4:  32 bytes
  *
  * All functions return 0 on success and -1 on error with errno set.
+ *
+ * If a write, truncate, or Merkle rebuild fails after it starts changing
+ * stored data, the context becomes unusable: every later call returns -1
+ * with errno=EIO until you close and reopen it. Other errors, including a
+ * sync failure, leave the context usable. Truncating to the current size
+ * is a no-op.
+ *
+ * Reopening clears the Merkle tree; rebuild it before use. A write that
+ * fails partway through the header can leave the file unreadable.
  */
 
 /* Opaque context for AEGIS-128L RAF operations. */
@@ -359,6 +368,9 @@ int aegis128l_raf_create(aegis128l_raf_ctx *ctx, const aegis_raf_io *io, const a
  * if the header is invalid or the MAC verification fails.
  *
  * The scratch buffer must be sized for the file's chunk_size (from probe).
+ * The logical size comes from the authenticated header, not the backing
+ * file's length, so extra bytes left by an interrupted operation are
+ * ignored.
  */
 int aegis128l_raf_open(aegis128l_raf_ctx *ctx, const aegis_raf_io *io, const aegis_raf_rng *rng,
                        const aegis_raf_config *cfg, const uint8_t *master_key);

@@ -813,6 +813,47 @@ test "aegis128l_raf - create without CREATE flag fails on empty file" {
     try testing.expect(ret != 0);
 }
 
+test "aegis128l_raf - create refuses to replace a short existing file without TRUNCATE" {
+    try testing.expectEqual(aegis.aegis_init(), 0);
+
+    var file = MemoryFile.init(testing.allocator);
+    defer file.deinit();
+
+    // Shorter than a RAF header, but still somebody's data.
+    try file.data.resize(testing.allocator, 13);
+
+    var key: [aegis.aegis128l_KEYBYTES]u8 = undefined;
+    random.bytes(&key);
+
+    var scratch_buf: [aegis.AEGIS128L_RAF_SCRATCH_SIZE(4096)]u8 align(aegis.AEGIS_RAF_SCRATCH_ALIGN) =
+        undefined;
+    const scratch = aegis.aegis_raf_scratch{
+        .buf = &scratch_buf,
+        .len = scratch_buf.len,
+    };
+
+    const cfg_create_only = aegis.aegis_raf_config{
+        .chunk_size = 4096,
+        .flags = aegis.AEGIS_RAF_CREATE,
+        .scratch = &scratch,
+    };
+
+    var ctx: aegis.aegis128l_raf_ctx align(32) = undefined;
+    var ret = aegis.aegis128l_raf_create(&ctx, &file.io(), &rng(), &cfg_create_only, &key);
+    try testing.expect(ret != 0);
+    try testing.expectEqual(std.c._errno().*, @backingInt(std.c.E.EXIST));
+
+    const cfg_truncate = aegis.aegis_raf_config{
+        .chunk_size = 4096,
+        .flags = aegis.AEGIS_RAF_CREATE | aegis.AEGIS_RAF_TRUNCATE,
+        .scratch = &scratch,
+    };
+
+    ret = aegis.aegis128l_raf_create(&ctx, &file.io(), &rng(), &cfg_truncate, &key);
+    try testing.expectEqual(ret, 0);
+    aegis.aegis128l_raf_close(&ctx);
+}
+
 test "aegis128l_raf - truncate grow within same chunk" {
     try testing.expectEqual(aegis.aegis_init(), 0);
 
@@ -1147,8 +1188,8 @@ test "aegis128l_raf - RNG failure during truncate grow" {
 
     var size_after: u64 = undefined;
     ret = aegis.aegis128l_raf_get_size(&ctx, &size_after);
-    try testing.expectEqual(ret, 0);
-    try testing.expectEqual(size_after, test_data.len);
+    try testing.expectEqual(ret, -1);
+    try testing.expectEqual(std.c._errno().*, @backingInt(std.c.E.IO));
 
     aegis.aegis128l_raf_close(&ctx);
 
@@ -1190,7 +1231,7 @@ test "aegis128l_raf - null scratch rejected" {
 
     const ret = aegis.aegis128l_raf_create(&ctx, &file.io(), &rng(), &cfg_no_scratch, &key);
     try testing.expect(ret != 0);
-    try testing.expectEqual(std.c._errno().*, @intFromEnum(std.c.E.INVAL));
+    try testing.expectEqual(std.c._errno().*, @backingInt(std.c.E.INVAL));
 }
 
 test "aegis128l_raf - undersized scratch rejected" {
@@ -1218,7 +1259,7 @@ test "aegis128l_raf - undersized scratch rejected" {
 
     const ret = aegis.aegis128l_raf_create(&ctx, &file.io(), &rng(), &cfg, &key);
     try testing.expect(ret != 0);
-    try testing.expectEqual(std.c._errno().*, @intFromEnum(std.c.E.INVAL));
+    try testing.expectEqual(std.c._errno().*, @backingInt(std.c.E.INVAL));
 }
 
 test "aegis128l_raf - misaligned scratch rejected" {
@@ -1247,7 +1288,7 @@ test "aegis128l_raf - misaligned scratch rejected" {
 
     const ret = aegis.aegis128l_raf_create(&ctx, &file.io(), &rng(), &cfg, &key);
     try testing.expect(ret != 0);
-    try testing.expectEqual(std.c._errno().*, @intFromEnum(std.c.E.INVAL));
+    try testing.expectEqual(std.c._errno().*, @backingInt(std.c.E.INVAL));
 }
 
 test "aegis_raf_probe - basic functionality" {
@@ -2420,7 +2461,7 @@ test "aegis128l_raf_merkle - max_chunks exceeded fails" {
     @memset(&large_data, 0xAA);
     ret = aegis.aegis128l_raf_write(&ctx, &bytes_written, &large_data, large_data.len, 0);
     try testing.expect(ret != 0);
-    try testing.expectEqual(std.c._errno().*, @intFromEnum(std.c.E.OVERFLOW));
+    try testing.expectEqual(std.c._errno().*, @backingInt(std.c.E.OVERFLOW));
 
     aegis.aegis128l_raf_close(&ctx);
 }
@@ -4838,7 +4879,7 @@ test "fuzz - max_chunks boundary enforcement" {
     var bytes_written: usize = undefined;
     const ret = aegis.aegis128l_raf_write(&state.ctx, &bytes_written, &overflow_buf, 1, max_bytes);
     try testing.expect(ret != 0);
-    try testing.expectEqual(std.c._errno().*, @intFromEnum(std.c.E.OVERFLOW));
+    try testing.expectEqual(std.c._errno().*, @backingInt(std.c.E.OVERFLOW));
 
     try state.verifyMerkle();
     try state.doRead();
@@ -5985,4 +6026,556 @@ test "aegis_raf_derive_master_key - context length limits" {
     try testing.expectEqual(aegis.aegis_raf_derive_master_key(&out32, 32, &master_key_32, 32, &context_buf, 73), -1);
 
     try testing.expectEqual(aegis.aegis_raf_derive_master_key(&out16, 16, &master_key_16, 16, &context_buf, std.math.maxInt(usize)), -1);
+}
+
+const FailingIo = struct {
+    inner: *MemoryFile,
+    calls: usize = 0,
+    fail_next_header_write: bool = false,
+    partial_header_write: bool = false,
+    fail_next_chunk_write: bool = false,
+    fail_next_read: bool = false,
+    reads_before_failure: usize = 0,
+    fail_next_set_size: bool = false,
+    grow_only: bool = false,
+    fail_next_sync: bool = false,
+
+    fn read_at(user: ?*anyopaque, buf: [*c]u8, len: usize, off: u64) callconv(.c) c_int {
+        const self: *@This() = @ptrCast(@alignCast(user));
+        self.calls += 1;
+        if (self.fail_next_read) {
+            if (self.reads_before_failure == 0) {
+                self.fail_next_read = false;
+                std.c._errno().* = @backingInt(std.c.E.IO);
+                return -1;
+            }
+            self.reads_before_failure -= 1;
+        }
+        return MemoryFile.read_at(@ptrCast(self.inner), buf, len, off);
+    }
+
+    fn write_at(user: ?*anyopaque, buf: [*c]const u8, len: usize, off: u64) callconv(.c) c_int {
+        const self: *@This() = @ptrCast(@alignCast(user));
+        self.calls += 1;
+        if (off == 0 and len == aegis.AEGIS_RAF_HEADER_SIZE and self.fail_next_header_write) {
+            self.fail_next_header_write = false;
+            if (self.partial_header_write) {
+                _ = MemoryFile.write_at(@ptrCast(self.inner), buf, len / 2, off);
+            }
+            std.c._errno().* = @backingInt(std.c.E.IO);
+            return -1;
+        }
+        if (off != 0 and self.fail_next_chunk_write) {
+            self.fail_next_chunk_write = false;
+            std.c._errno().* = @backingInt(std.c.E.IO);
+            return -1;
+        }
+        return MemoryFile.write_at(@ptrCast(self.inner), buf, len, off);
+    }
+
+    fn get_size(user: ?*anyopaque, size: [*c]u64) callconv(.c) c_int {
+        const self: *@This() = @ptrCast(@alignCast(user));
+        self.calls += 1;
+        return MemoryFile.get_size(@ptrCast(self.inner), size);
+    }
+
+    fn set_size(user: ?*anyopaque, size: u64) callconv(.c) c_int {
+        const self: *@This() = @ptrCast(@alignCast(user));
+        self.calls += 1;
+        if (self.fail_next_set_size or (self.grow_only and size < self.inner.data.items.len)) {
+            self.fail_next_set_size = false;
+            std.c._errno().* = @backingInt(std.c.E.IO);
+            return -1;
+        }
+        return MemoryFile.set_size(@ptrCast(self.inner), size);
+    }
+
+    fn sync(user: ?*anyopaque) callconv(.c) c_int {
+        const self: *@This() = @ptrCast(@alignCast(user));
+        self.calls += 1;
+        if (self.fail_next_sync) {
+            self.fail_next_sync = false;
+            std.c._errno().* = @backingInt(std.c.E.NOSPC);
+            return -1;
+        }
+        return MemoryFile.sync(@ptrCast(self.inner));
+    }
+
+    fn io(self: *FailingIo) aegis.aegis_raf_io {
+        return .{
+            .user = self,
+            .read_at = read_at,
+            .write_at = write_at,
+            .get_size = get_size,
+            .set_size = set_size,
+            .sync = sync,
+        };
+    }
+};
+
+fn expectRafIoError(ret: c_int) !void {
+    try testing.expectEqual(-1, ret);
+    try testing.expectEqual(@backingInt(std.c.E.IO), std.c._errno().*);
+}
+
+fn expectFailedRaf(comptime variant: []const u8, ctx: *@field(aegis, variant ++ "_raf_ctx"), failing: *FailingIo, merkle_enabled: bool) !void {
+    const calls = failing.calls;
+    var size: u64 = undefined;
+    var count: usize = 123;
+    var buf: [32]u8 = @splat(0xaa);
+    try expectRafIoError(@field(aegis, variant ++ "_raf_get_size")(ctx, &size));
+    try expectRafIoError(@field(aegis, variant ++ "_raf_read")(ctx, &buf, &count, buf.len, 0));
+    try testing.expectEqual(0, count);
+    try testing.expect(std.mem.allEqual(u8, &buf, 0xaa));
+    try expectRafIoError(@field(aegis, variant ++ "_raf_read")(ctx, null, &count, 0, 0));
+    try expectRafIoError(@field(aegis, variant ++ "_raf_write")(ctx, &count, &buf, buf.len, 0));
+    try testing.expectEqual(0, count);
+    try expectRafIoError(@field(aegis, variant ++ "_raf_write")(ctx, &count, null, 0, 0));
+    try expectRafIoError(@field(aegis, variant ++ "_raf_truncate")(ctx, 0));
+    try expectRafIoError(@field(aegis, variant ++ "_raf_truncate")(ctx, 1024));
+    try expectRafIoError(@field(aegis, variant ++ "_raf_sync")(ctx));
+    const notsup = if (@hasField(std.c.E, "NOTSUP")) std.c.E.NOTSUP else std.c.E.OPNOTSUPP;
+    const merkle_errno = @backingInt(if (merkle_enabled) std.c.E.IO else notsup);
+    try testing.expectEqual(-1, @field(aegis, variant ++ "_raf_merkle_rebuild")(ctx));
+    try testing.expectEqual(merkle_errno, std.c._errno().*);
+    try testing.expectEqual(-1, @field(aegis, variant ++ "_raf_merkle_verify")(ctx, null));
+    try testing.expectEqual(merkle_errno, std.c._errno().*);
+    try testing.expectEqual(-1, @field(aegis, variant ++ "_raf_merkle_commitment")(ctx, &buf, 16));
+    try testing.expectEqual(merkle_errno, std.c._errno().*);
+    try testing.expectEqual(calls, failing.calls);
+}
+
+const FailingLeaf = struct {
+    fail_next: bool = false,
+    calls: usize = 0,
+
+    fn hash(user: ?*anyopaque, out: [*c]u8, out_len: usize, chunk: [*c]const u8, chunk_len: usize, chunk_idx: u64) callconv(.c) c_int {
+        const self: *@This() = @ptrCast(@alignCast(user));
+        self.calls += 1;
+        if (self.fail_next) {
+            self.fail_next = false;
+            @memset(out[0 .. out_len / 2], 0xff);
+            std.c._errno().* = @backingInt(std.c.E.IO);
+            return -1;
+        }
+        return xorHashLeaf(null, out, out_len, chunk, chunk_len, chunk_idx);
+    }
+};
+
+test "raf - mutation failures require reopen for every variant" {
+    try testing.expectEqual(0, aegis.aegis_init());
+    const Fault = enum { chunk_write, header_write, torn_header, resize, write_hash, shrink_hash, rebuild_hash, second_write_read, second_rebuild_read };
+    inline for (.{ "aegis128l", "aegis128x2", "aegis128x4", "aegis256", "aegis256x2", "aegis256x4" }) |variant| {
+        for (std.enums.values(Fault)) |fault| {
+            var file = MemoryFile.init(testing.allocator);
+            defer file.deinit();
+            var failing = FailingIo{ .inner = &file };
+            var leaf = FailingLeaf{};
+            var merkle_buf: [256]u8 = undefined;
+            const merkle = aegis.aegis_raf_merkle_config{
+                .buf = &merkle_buf,
+                .len = merkle_buf.len,
+                .hash_len = MERKLE_HASH_LEN,
+                .max_chunks = 4,
+                .user = &leaf,
+                .hash_leaf = FailingLeaf.hash,
+                .hash_parent = xorHashParent,
+                .hash_empty = xorHashEmpty,
+                .hash_commitment = xorHashCommitment,
+            };
+            var scratch_buf: [aegis.AEGIS256X4_RAF_SCRATCH_SIZE(1024)]u8 align(aegis.AEGIS_RAF_SCRATCH_ALIGN) = undefined;
+            const scratch = aegis.aegis_raf_scratch{ .buf = &scratch_buf, .len = scratch_buf.len };
+            const cfg = aegis.aegis_raf_config{ .scratch = &scratch, .merkle = &merkle, .chunk_size = 1024, .flags = aegis.AEGIS_RAF_CREATE };
+            var key: [32]u8 = undefined;
+            random.bytes(&key);
+            var ctx: @field(aegis, variant ++ "_raf_ctx") = undefined;
+            try testing.expectEqual(0, @field(aegis, variant ++ "_raf_create")(&ctx, &failing.io(), &rng(), &cfg, &key));
+            defer @field(aegis, variant ++ "_raf_close")(&ctx);
+            const tree_len = aegis.aegis_raf_merkle_buffer_size(&merkle);
+            var empty_tree: [256]u8 = undefined;
+            @memcpy(empty_tree[0..tree_len], merkle_buf[0..tree_len]);
+            const data: [2048]u8 = @splat(0x5a);
+            var count: usize = undefined;
+            try testing.expectEqual(0, @field(aegis, variant ++ "_raf_write")(&ctx, &count, &data, data.len, 0));
+
+            // Overflow is rejected before callbacks and leaves the context usable.
+            const calls = failing.calls;
+            try testing.expectEqual(-1, @field(aegis, variant ++ "_raf_write")(&ctx, &count, &data, 1, std.math.maxInt(u64)));
+            try testing.expectEqual(@backingInt(std.c.E.OVERFLOW), std.c._errno().*);
+            try testing.expectEqual(calls, failing.calls);
+            try testing.expectEqual(0, @field(aegis, variant ++ "_raf_merkle_verify")(&ctx, null));
+
+            if (fault == .chunk_write) {
+                failing.fail_next_read = true;
+                const before_noop = failing.calls;
+                try testing.expectEqual(0, @field(aegis, variant ++ "_raf_truncate")(&ctx, data.len));
+                try testing.expectEqual(before_noop, failing.calls);
+                try testing.expect(failing.fail_next_read);
+
+                try expectRafIoError(@field(aegis, variant ++ "_raf_write")(&ctx, &count, &data, 1, 0));
+                var unchanged_size: u64 = undefined;
+                try testing.expectEqual(0, @field(aegis, variant ++ "_raf_get_size")(&ctx, &unchanged_size));
+                try testing.expectEqual(data.len, unchanged_size);
+                try testing.expectEqual(0, @field(aegis, variant ++ "_raf_merkle_verify")(&ctx, null));
+
+                failing.fail_next_read = true;
+                try expectRafIoError(@field(aegis, variant ++ "_raf_merkle_rebuild")(&ctx));
+                try testing.expectEqual(0, @field(aegis, variant ++ "_raf_merkle_verify")(&ctx, null));
+                try testing.expectEqual(0, @field(aegis, variant ++ "_raf_merkle_rebuild")(&ctx));
+            }
+
+            switch (fault) {
+                .chunk_write => {
+                    failing.fail_next_chunk_write = true;
+                    try expectRafIoError(@field(aegis, variant ++ "_raf_write")(&ctx, &count, &data, 1, 0));
+                },
+                .header_write, .torn_header => {
+                    failing.fail_next_header_write = true;
+                    failing.partial_header_write = fault == .torn_header;
+                    try expectRafIoError(@field(aegis, variant ++ "_raf_write")(&ctx, &count, &data, 1, data.len));
+                },
+                .resize => {
+                    failing.fail_next_set_size = true;
+                    try expectRafIoError(@field(aegis, variant ++ "_raf_truncate")(&ctx, 0));
+                },
+                .write_hash => {
+                    leaf.fail_next = true;
+                    try expectRafIoError(@field(aegis, variant ++ "_raf_write")(&ctx, &count, &data, 1, 0));
+                },
+                .shrink_hash => {
+                    leaf.fail_next = true;
+                    try expectRafIoError(@field(aegis, variant ++ "_raf_truncate")(&ctx, 500));
+                },
+                .rebuild_hash => {
+                    var tree_before: [256]u8 = undefined;
+                    @memcpy(tree_before[0..tree_len], merkle_buf[0..tree_len]);
+                    const file_before = try testing.allocator.dupe(u8, file.data.items);
+                    defer testing.allocator.free(file_before);
+                    leaf.fail_next = true;
+                    try expectRafIoError(@field(aegis, variant ++ "_raf_merkle_rebuild")(&ctx));
+                    try testing.expect(!std.mem.eql(u8, tree_before[0..tree_len], merkle_buf[0..tree_len]));
+                    try testing.expectEqualSlices(u8, file_before, file.data.items);
+                },
+                .second_write_read => {
+                    failing.fail_next_read = true;
+                    failing.reads_before_failure = 1;
+                    try expectRafIoError(@field(aegis, variant ++ "_raf_write")(&ctx, &count, &data, 1024, 1));
+                },
+                .second_rebuild_read => {
+                    failing.fail_next_read = true;
+                    failing.reads_before_failure = 1;
+                    try expectRafIoError(@field(aegis, variant ++ "_raf_merkle_rebuild")(&ctx));
+                },
+            }
+            const hash_calls = leaf.calls;
+            try expectFailedRaf(variant, &ctx, &failing, true);
+            try testing.expectEqual(hash_calls, leaf.calls);
+            const backing_size = file.data.items.len;
+            @field(aegis, variant ++ "_raf_close")(&ctx);
+            const ret = @field(aegis, variant ++ "_raf_open")(&ctx, &failing.io(), &rng(), &cfg, &key);
+            if (fault == .torn_header) {
+                try testing.expectEqual(-1, ret);
+                continue;
+            }
+            try testing.expectEqual(0, ret);
+            try testing.expectEqualSlices(u8, empty_tree[0..tree_len], merkle_buf[0..tree_len]);
+            try testing.expectEqual(0, @field(aegis, variant ++ "_raf_merkle_rebuild")(&ctx));
+            try testing.expectEqual(0, @field(aegis, variant ++ "_raf_merkle_verify")(&ctx, null));
+            var size: u64 = undefined;
+            try testing.expectEqual(0, @field(aegis, variant ++ "_raf_get_size")(&ctx, &size));
+            const expected_size: u64 = if (fault == .resize) 0 else data.len;
+            try testing.expectEqual(expected_size, size);
+            try testing.expectEqual(backing_size, file.data.items.len);
+            if (fault == .resize) {
+                // The header already committed to the smaller size, so retrying is a no-op.
+                const noop_calls = failing.calls;
+                try testing.expectEqual(0, @field(aegis, variant ++ "_raf_truncate")(&ctx, 0));
+                try testing.expectEqual(noop_calls, failing.calls);
+                try testing.expectEqual(backing_size, file.data.items.len);
+            }
+            try testing.expectEqual(0, @field(aegis, variant ++ "_raf_write")(&ctx, &count, &data, data.len, 0));
+        }
+    }
+}
+
+test "raf - sync failure leaves data and Merkle state usable for every variant" {
+    try testing.expectEqual(0, aegis.aegis_init());
+    inline for (.{ "aegis128l", "aegis128x2", "aegis128x4", "aegis256", "aegis256x2", "aegis256x4" }) |variant| {
+        var file = MemoryFile.init(testing.allocator);
+        defer file.deinit();
+        var failing = FailingIo{ .inner = &file };
+        var merkle_buf: [256]u8 = undefined;
+        const merkle = aegis.aegis_raf_merkle_config{
+            .buf = &merkle_buf,
+            .len = merkle_buf.len,
+            .hash_len = MERKLE_HASH_LEN,
+            .max_chunks = 4,
+            .hash_leaf = xorHashLeaf,
+            .hash_parent = xorHashParent,
+            .hash_empty = xorHashEmpty,
+            .hash_commitment = xorHashCommitment,
+        };
+        var scratch_buf: [aegis.AEGIS256X4_RAF_SCRATCH_SIZE(1024)]u8 align(aegis.AEGIS_RAF_SCRATCH_ALIGN) = undefined;
+        const scratch = aegis.aegis_raf_scratch{ .buf = &scratch_buf, .len = scratch_buf.len };
+        const cfg = aegis.aegis_raf_config{ .scratch = &scratch, .merkle = &merkle, .chunk_size = 1024, .flags = aegis.AEGIS_RAF_CREATE };
+        var key: [32]u8 = undefined;
+        random.bytes(&key);
+        var ctx: @field(aegis, variant ++ "_raf_ctx") = undefined;
+        try testing.expectEqual(0, @field(aegis, variant ++ "_raf_create")(&ctx, &failing.io(), &rng(), &cfg, &key));
+        defer @field(aegis, variant ++ "_raf_close")(&ctx);
+        const data: [500]u8 = @splat(0x5a);
+        var count: usize = undefined;
+        try testing.expectEqual(0, @field(aegis, variant ++ "_raf_write")(&ctx, &count, &data, data.len, 0));
+        var root_before: [MERKLE_HASH_LEN]u8 = undefined;
+        try testing.expectEqual(0, @field(aegis, variant ++ "_raf_merkle_commitment")(&ctx, &root_before, root_before.len));
+
+        failing.fail_next_sync = true;
+        try testing.expectEqual(-1, @field(aegis, variant ++ "_raf_sync")(&ctx));
+        try testing.expectEqual(@backingInt(std.c.E.NOSPC), std.c._errno().*);
+        var size: u64 = undefined;
+        try testing.expectEqual(0, @field(aegis, variant ++ "_raf_get_size")(&ctx, &size));
+        try testing.expectEqual(data.len, size);
+        var out: [500]u8 = undefined;
+        try testing.expectEqual(0, @field(aegis, variant ++ "_raf_read")(&ctx, &out, &count, out.len, 0));
+        try testing.expectEqual(out.len, count);
+        try testing.expectEqualSlices(u8, &data, &out);
+        var root_after: [MERKLE_HASH_LEN]u8 = undefined;
+        try testing.expectEqual(0, @field(aegis, variant ++ "_raf_merkle_commitment")(&ctx, &root_after, root_after.len));
+        try testing.expectEqualSlices(u8, &root_before, &root_after);
+        try testing.expectEqual(0, @field(aegis, variant ++ "_raf_sync")(&ctx));
+        try testing.expectEqual(0, @field(aegis, variant ++ "_raf_write")(&ctx, &count, &data, data.len, data.len));
+        try testing.expectEqual(0, @field(aegis, variant ++ "_raf_merkle_verify")(&ctx, null));
+    }
+}
+
+test "aegis128l_raf - failed shrink header requires reopen and preserves chunks" {
+    try testing.expectEqual(aegis.aegis_init(), 0);
+
+    var file = MemoryFile.init(testing.allocator);
+    defer file.deinit();
+
+    var key: [aegis.aegis128l_KEYBYTES]u8 = undefined;
+    random.bytes(&key);
+
+    var scratch_buf: [aegis.AEGIS128L_RAF_SCRATCH_SIZE(1024)]u8 align(aegis.AEGIS_RAF_SCRATCH_ALIGN) =
+        undefined;
+    const scratch = aegis.aegis_raf_scratch{
+        .buf = &scratch_buf,
+        .len = scratch_buf.len,
+    };
+
+    const cfg = aegis.aegis_raf_config{
+        .chunk_size = 1024,
+        .flags = aegis.AEGIS_RAF_CREATE,
+        .scratch = &scratch,
+    };
+
+    var ctx: aegis.aegis128l_raf_ctx align(32) = undefined;
+    var ret = aegis.aegis128l_raf_create(&ctx, &file.io(), &rng(), &cfg, &key);
+    try testing.expectEqual(ret, 0);
+
+    var data: [2048]u8 = undefined;
+    random.bytes(&data);
+    var bytes_written: usize = undefined;
+    ret = aegis.aegis128l_raf_write(&ctx, &bytes_written, &data, data.len, 0);
+    try testing.expectEqual(ret, 0);
+    aegis.aegis128l_raf_close(&ctx);
+
+    var failing = FailingIo{ .inner = &file, .fail_next_header_write = true };
+    const open_cfg = aegis.aegis_raf_config{
+        .chunk_size = 0,
+        .flags = 0,
+        .scratch = &scratch,
+    };
+    ret = aegis.aegis128l_raf_open(&ctx, &failing.io(), &rng(), &open_cfg, &key);
+    try testing.expectEqual(ret, 0);
+
+    ret = aegis.aegis128l_raf_truncate(&ctx, 0);
+    try testing.expect(ret != 0);
+
+    try expectFailedRaf("aegis128l", &ctx, &failing, false);
+    aegis.aegis128l_raf_close(&ctx);
+    try testing.expectEqual(0, aegis.aegis128l_raf_open(&ctx, &failing.io(), &rng(), &open_cfg, &key));
+
+    // The header failure occurred before any records were discarded.
+    var size: u64 = undefined;
+    ret = aegis.aegis128l_raf_get_size(&ctx, &size);
+    try testing.expectEqual(ret, 0);
+    try testing.expectEqual(size, data.len);
+
+    var read_buf: [2048]u8 = undefined;
+    var bytes_read: usize = undefined;
+    ret = aegis.aegis128l_raf_read(&ctx, &read_buf, &bytes_read, data.len, 0);
+    try testing.expectEqual(ret, 0);
+    try testing.expectEqualSlices(u8, &data, &read_buf);
+
+    // Growth after reopening must preserve the original data.
+    ret = aegis.aegis128l_raf_truncate(&ctx, 3072);
+    try testing.expectEqual(ret, 0);
+
+    ret = aegis.aegis128l_raf_read(&ctx, &read_buf, &bytes_read, data.len, 0);
+    try testing.expectEqual(ret, 0);
+    try testing.expectEqualSlices(u8, &data, &read_buf);
+
+    aegis.aegis128l_raf_close(&ctx);
+}
+
+test "aegis128l_raf_merkle - failed grow requires reopen before a smaller write" {
+    try testing.expectEqual(aegis.aegis_init(), 0);
+
+    var file = MemoryFile.init(testing.allocator);
+    defer file.deinit();
+
+    var key: [aegis.aegis128l_KEYBYTES]u8 = undefined;
+    random.bytes(&key);
+
+    const max_chunks: u64 = 4;
+    var merkle_buf: [256]u8 = undefined;
+    @memset(&merkle_buf, 0);
+
+    var merkle_cfg = aegis.aegis_raf_merkle_config{
+        .buf = &merkle_buf,
+        .len = merkle_buf.len,
+        .hash_len = MERKLE_HASH_LEN,
+        .max_chunks = max_chunks,
+        .user = null,
+        .hash_leaf = xorHashLeaf,
+        .hash_parent = xorHashParent,
+        .hash_empty = xorHashEmpty,
+        .hash_commitment = xorHashCommitment,
+    };
+
+    var scratch_buf: [aegis.AEGIS128L_RAF_SCRATCH_SIZE(1024)]u8 align(aegis.AEGIS_RAF_SCRATCH_ALIGN) =
+        undefined;
+    const scratch = aegis.aegis_raf_scratch{
+        .buf = &scratch_buf,
+        .len = scratch_buf.len,
+    };
+
+    const cfg = aegis.aegis_raf_config{
+        .chunk_size = 1024,
+        .flags = aegis.AEGIS_RAF_CREATE,
+        .scratch = &scratch,
+        .merkle = &merkle_cfg,
+    };
+
+    var ctx: aegis.aegis128l_raf_ctx align(32) = undefined;
+    var ret = aegis.aegis128l_raf_create(&ctx, &file.io(), &rng(), &cfg, &key);
+    try testing.expectEqual(ret, 0);
+    aegis.aegis128l_raf_close(&ctx);
+
+    var failing = FailingIo{ .inner = &file, .fail_next_header_write = true };
+    const open_cfg = aegis.aegis_raf_config{
+        .chunk_size = 0,
+        .flags = 0,
+        .scratch = &scratch,
+        .merkle = &merkle_cfg,
+    };
+    ret = aegis.aegis128l_raf_open(&ctx, &failing.io(), &rng(), &open_cfg, &key);
+    try testing.expectEqual(ret, 0);
+
+    var data: [2048]u8 = undefined;
+    random.bytes(&data);
+    var bytes_written: usize = undefined;
+    ret = aegis.aegis128l_raf_write(&ctx, &bytes_written, &data, data.len, 0);
+    try testing.expect(ret != 0);
+
+    try expectFailedRaf("aegis128l", &ctx, &failing, true);
+    aegis.aegis128l_raf_close(&ctx);
+    try testing.expectEqual(0, aegis.aegis128l_raf_open(&ctx, &failing.io(), &rng(), &open_cfg, &key));
+    try testing.expectEqual(0, aegis.aegis128l_raf_merkle_rebuild(&ctx));
+
+    ret = aegis.aegis128l_raf_write(&ctx, &bytes_written, data[0..1024], 1024, 0);
+    try testing.expectEqual(ret, 0);
+
+    var size: u64 = undefined;
+    ret = aegis.aegis128l_raf_get_size(&ctx, &size);
+    try testing.expectEqual(ret, 0);
+    try testing.expectEqual(size, 1024);
+    try testing.expectEqual(0, aegis.aegis128l_raf_merkle_verify(&ctx, null));
+
+    aegis.aegis128l_raf_close(&ctx);
+}
+
+test "aegis128l_raf_merkle - shrink read fails before any mutation" {
+    try testing.expectEqual(aegis.aegis_init(), 0);
+
+    var file = MemoryFile.init(testing.allocator);
+    defer file.deinit();
+
+    var key: [aegis.aegis128l_KEYBYTES]u8 = undefined;
+    random.bytes(&key);
+
+    const max_chunks: u64 = 4;
+    var merkle_buf: [256]u8 = undefined;
+    @memset(&merkle_buf, 0);
+
+    var merkle_cfg = aegis.aegis_raf_merkle_config{
+        .buf = &merkle_buf,
+        .len = merkle_buf.len,
+        .hash_len = MERKLE_HASH_LEN,
+        .max_chunks = max_chunks,
+        .user = null,
+        .hash_leaf = xorHashLeaf,
+        .hash_parent = xorHashParent,
+        .hash_empty = xorHashEmpty,
+        .hash_commitment = xorHashCommitment,
+    };
+
+    var scratch_buf: [aegis.AEGIS128L_RAF_SCRATCH_SIZE(1024)]u8 align(aegis.AEGIS_RAF_SCRATCH_ALIGN) =
+        undefined;
+    const scratch = aegis.aegis_raf_scratch{
+        .buf = &scratch_buf,
+        .len = scratch_buf.len,
+    };
+
+    const cfg = aegis.aegis_raf_config{
+        .chunk_size = 1024,
+        .flags = aegis.AEGIS_RAF_CREATE,
+        .scratch = &scratch,
+        .merkle = &merkle_cfg,
+    };
+
+    var ctx: aegis.aegis128l_raf_ctx align(32) = undefined;
+    var ret = aegis.aegis128l_raf_create(&ctx, &file.io(), &rng(), &cfg, &key);
+    try testing.expectEqual(ret, 0);
+
+    var data: [2048]u8 = undefined;
+    random.bytes(&data);
+    var bytes_written: usize = undefined;
+    ret = aegis.aegis128l_raf_write(&ctx, &bytes_written, &data, data.len, 0);
+    try testing.expectEqual(ret, 0);
+    aegis.aegis128l_raf_close(&ctx);
+
+    var failing = FailingIo{ .inner = &file };
+    const open_cfg = aegis.aegis_raf_config{
+        .chunk_size = 0,
+        .flags = 0,
+        .scratch = &scratch,
+        .merkle = &merkle_cfg,
+    };
+    ret = aegis.aegis128l_raf_open(&ctx, &failing.io(), &rng(), &open_cfg, &key);
+    try testing.expectEqual(ret, 0);
+
+    try testing.expectEqual(0, aegis.aegis128l_raf_merkle_rebuild(&ctx));
+    var original_root: [MERKLE_HASH_LEN]u8 = undefined;
+    try testing.expectEqual(0, aegis.aegis128l_raf_merkle_commitment(&ctx, &original_root, MERKLE_HASH_LEN));
+    failing.fail_next_read = true;
+    ret = aegis.aegis128l_raf_truncate(&ctx, 500);
+    try testing.expect(ret != 0);
+
+    var unchanged_root: [MERKLE_HASH_LEN]u8 = undefined;
+    try testing.expectEqual(0, aegis.aegis128l_raf_merkle_commitment(&ctx, &unchanged_root, MERKLE_HASH_LEN));
+    try testing.expectEqualSlices(u8, &original_root, &unchanged_root);
+    try testing.expectEqual(0, aegis.aegis128l_raf_merkle_verify(&ctx, null));
+
+    ret = aegis.aegis128l_raf_truncate(&ctx, 500);
+    try testing.expectEqual(ret, 0);
+
+    var size: u64 = undefined;
+    ret = aegis.aegis128l_raf_get_size(&ctx, &size);
+    try testing.expectEqual(ret, 0);
+    try testing.expectEqual(size, 500);
+
+    aegis.aegis128l_raf_close(&ctx);
 }

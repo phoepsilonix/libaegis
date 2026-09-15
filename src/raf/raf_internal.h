@@ -16,6 +16,10 @@
 #    define EINVAL 22
 #endif
 
+#ifndef EIO
+#    define EIO 5
+#endif
+
 #ifndef EEXIST
 #    define EEXIST 17
 #endif
@@ -60,6 +64,8 @@ typedef struct aegis_raf_ctx_internal {
     int                     merkle_enabled;
     uint8_t                 alg_id;
     uint8_t                 version;
+    /* Sticky once a mutation fails; see the overview in aegis_raf.h. */
+    uint8_t                 failed;
 } aegis_raf_ctx_internal;
 
 #define LOAD64_LE(SRC) load64_le(SRC)
