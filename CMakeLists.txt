@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.10)
-project(aegis LANGUAGES C VERSION 0.10.3)
+project(aegis LANGUAGES C VERSION 0.10.4)
 
 include(CMakePackageConfigHelpers)
 include(GNUInstallDirs)
