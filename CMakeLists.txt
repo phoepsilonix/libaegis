@@ -10,8 +10,6 @@ endif()
 
 set(CMAKE_C_STANDARD 99)
 
-include_directories("src/include")
-
 option(FAVOR_PERFORMANCE "Favor performance over side-channel mitigations" OFF)
 
 if(FAVOR_PERFORMANCE)
@@ -25,7 +23,9 @@ add_library("${PROJECT_NAME}")
 add_library("${PROJECT_NAME}::${PROJECT_NAME}" ALIAS "${PROJECT_NAME}")
 
 if(BUILD_SHARED_LIBS)
-  set_target_properties("${PROJECT_NAME}" PROPERTIES VERSION "${PROJECT_VERSION}" SOVERSION 0)
+  set_target_properties("${PROJECT_NAME}" PROPERTIES VERSION "${PROJECT_VERSION}"
+                                                     SOVERSION 0
+                                                     WINDOWS_EXPORT_ALL_SYMBOLS ON)
 endif()
 
 target_sources("${PROJECT_NAME}" PRIVATE ${SOURCE_FILES})
@@ -40,7 +40,7 @@ if(EMSCRIPTEN OR CMAKE_SYSTEM_PROCESSOR MATCHES "^wasm")
 endif()
 
 target_include_directories("${PROJECT_NAME}"
-                           PUBLIC $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}>
+                           PUBLIC $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src/include>
                                   $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
 
 # Installation
@@ -49,6 +49,7 @@ set(TARGETS_EXPORT_NAME "${PROJECT_NAME}-targets")
 
 install(TARGETS "${PROJECT_NAME}"
         EXPORT "${TARGETS_EXPORT_NAME}"
+        RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}"
         LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}"
         ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}")
 
