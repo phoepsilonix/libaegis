@@ -341,6 +341,49 @@ fn bench_aegis256x4_mac(io: Io, stdout: *Io.Writer) !void {
     try stdout.print("AEGIS-256X4 MAC\t{d:10.2} Mb/s\n", .{throughput});
 }
 
+fn bench_stream(io: Io, stdout: *Io.Writer, comptime variant: []const u8, comptime name: []const u8) !void {
+    const stream = @field(aegis, variant ++ "_stream");
+    var key: [@field(aegis, variant ++ "_KEYBYTES")]u8 = undefined;
+    var nonce: [@field(aegis, variant ++ "_NPUBBYTES")]u8 = undefined;
+    var buf: [msg_len]u8 = undefined;
+
+    io.random(&key);
+    io.random(&nonce);
+
+    const start = Timestamp.now(io, .awake);
+    for (0..iterations) |_| {
+        stream(&buf, msg_len, &nonce, &key);
+    }
+    const end = Timestamp.now(io, .awake);
+    mem.doNotOptimizeAway(buf[0]);
+    const bits: f128 = @floatFromInt(@as(u128, msg_len) * iterations * 8);
+    const elapsed_s = @as(f128, @floatFromInt(end.nanoseconds - start.nanoseconds)) / time.ns_per_s;
+    const throughput = @as(f64, @floatCast(bits / (elapsed_s * 1000 * 1000)));
+    try stdout.print(name ++ " stream\t{d:10.2} Mb/s\n", .{throughput});
+}
+
+fn bench_stream_xor(io: Io, stdout: *Io.Writer, comptime variant: []const u8, comptime name: []const u8) !void {
+    const stream_xor = @field(aegis, variant ++ "_stream_xor");
+    var key: [@field(aegis, variant ++ "_KEYBYTES")]u8 = undefined;
+    var nonce: [@field(aegis, variant ++ "_NPUBBYTES")]u8 = undefined;
+    var buf: [msg_len]u8 = undefined;
+
+    io.random(&key);
+    io.random(&nonce);
+    io.random(&buf);
+
+    const start = Timestamp.now(io, .awake);
+    for (0..iterations) |_| {
+        stream_xor(&buf, &buf, msg_len, &nonce, &key);
+    }
+    const end = Timestamp.now(io, .awake);
+    mem.doNotOptimizeAway(buf[0]);
+    const bits: f128 = @floatFromInt(@as(u128, msg_len) * iterations * 8);
+    const elapsed_s = @as(f128, @floatFromInt(end.nanoseconds - start.nanoseconds)) / time.ns_per_s;
+    const throughput = @as(f64, @floatCast(bits / (elapsed_s * 1000 * 1000)));
+    try stdout.print(name ++ " stream_xor\t{d:10.2} Mb/s\n", .{throughput});
+}
+
 pub fn main(init: std.process.Init) !void {
     if (aegis.aegis_init() != 0) {
         return error.InitFailed;
@@ -364,6 +407,20 @@ pub fn main(init: std.process.Init) !void {
     try bench_aegis256_mac(io, stdout);
     try bench_aegis256x2_mac(io, stdout);
     try bench_aegis256x4_mac(io, stdout);
+
+    try bench_stream(io, stdout, "aegis256", "AEGIS-256");
+    try bench_stream(io, stdout, "aegis256x2", "AEGIS-256X2");
+    try bench_stream(io, stdout, "aegis256x4", "AEGIS-256X4");
+    try bench_stream(io, stdout, "aegis128l", "AEGIS-128L");
+    try bench_stream(io, stdout, "aegis128x2", "AEGIS-128X2");
+    try bench_stream(io, stdout, "aegis128x4", "AEGIS-128X4");
+
+    try bench_stream_xor(io, stdout, "aegis256", "AEGIS-256");
+    try bench_stream_xor(io, stdout, "aegis256x2", "AEGIS-256X2");
+    try bench_stream_xor(io, stdout, "aegis256x4", "AEGIS-256X4");
+    try bench_stream_xor(io, stdout, "aegis128l", "AEGIS-128L");
+    try bench_stream_xor(io, stdout, "aegis128x2", "AEGIS-128X2");
+    try bench_stream_xor(io, stdout, "aegis128x4", "AEGIS-128X4");
 
     try stdout.flush();
 }
