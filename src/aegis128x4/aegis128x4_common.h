@@ -172,6 +172,31 @@ aegis128x4_enc(uint8_t *const dst, const uint8_t *const src, aes_block_t *const 
 }
 
 static inline void
+aegis128x4_xor_keystream(uint8_t *const dst, const uint8_t *const src, aes_block_t *const state)
+{
+    static CRYPTO_ALIGN(AES_BLOCK_LENGTH) const uint8_t zero_[AES_BLOCK_LENGTH] = { 0 };
+
+    const aes_block_t zero = AES_BLOCK_LOAD(zero_);
+    aes_block_t       msg0, msg1;
+    aes_block_t       tmp0, tmp1;
+
+    msg0 = AES_BLOCK_LOAD(src);
+    msg1 = AES_BLOCK_LOAD(src + AES_BLOCK_LENGTH);
+    tmp0 = AES_BLOCK_XOR(msg0, state[6]);
+    tmp0 = AES_BLOCK_XOR(tmp0, state[1]);
+    tmp1 = AES_BLOCK_XOR(msg1, state[5]);
+    tmp1 = AES_BLOCK_XOR(tmp1, state[2]);
+    tmp0 = AES_BLOCK_XOR(tmp0, AES_BLOCK_AND(state[2], state[3]));
+    tmp1 = AES_BLOCK_XOR(tmp1, AES_BLOCK_AND(state[6], state[7]));
+    AES_BLOCK_STORE(dst, tmp0);
+    AES_BLOCK_STORE(dst + AES_BLOCK_LENGTH, tmp1);
+    AES_BLOCK_ENC_BARRIER();
+
+    /* Don't absorb the input, so that the keystream stays the same as the one from stream(). */
+    aegis128x4_update(state, zero, zero);
+}
+
+static inline void
 aegis128x4_dec(uint8_t *const dst, const uint8_t *const src, aes_block_t *const state)
 {
     aes_block_t msg0, msg1;
@@ -398,6 +423,27 @@ stream(uint8_t *out, size_t len, const uint8_t *npub, const uint8_t *k)
     }
     if (len % RATE) {
         aegis128x4_enc(dst, src, state);
+        memcpy(out + i, dst, len % RATE);
+    }
+}
+
+static void
+stream_xor(uint8_t *out, const uint8_t *in, size_t len, const uint8_t *npub, const uint8_t *k)
+{
+    aegis_blocks                    state;
+    CRYPTO_ALIGN(ALIGNMENT) uint8_t src[RATE];
+    CRYPTO_ALIGN(ALIGNMENT) uint8_t dst[RATE];
+    size_t                          i;
+
+    aegis128x4_init(k, npub, state);
+
+    for (i = 0; i + RATE <= len; i += RATE) {
+        aegis128x4_xor_keystream(out + i, in + i, state);
+    }
+    if (len % RATE) {
+        memset(src, 0, RATE);
+        memcpy(src, in + i, len % RATE);
+        aegis128x4_xor_keystream(dst, src, state);
         memcpy(out + i, dst, len % RATE);
     }
 }

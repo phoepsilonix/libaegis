@@ -183,6 +183,27 @@ aegis256x4_enc(uint8_t *const dst, const uint8_t *const src, aes_block_t *const 
 }
 
 static inline void
+aegis256x4_xor_keystream(uint8_t *const dst, const uint8_t *const src, aes_block_t *const state)
+{
+    static CRYPTO_ALIGN(AES_BLOCK_LENGTH) const uint8_t zero_[AES_BLOCK_LENGTH] = { 0 };
+
+    const aes_block_t zero = AES_BLOCK_LOAD(zero_);
+    aes_block_t       msg;
+    aes_block_t       tmp;
+
+    msg = AES_BLOCK_LOAD(src);
+    tmp = AES_BLOCK_XOR(msg, state[5]);
+    tmp = AES_BLOCK_XOR(tmp, state[4]);
+    tmp = AES_BLOCK_XOR(tmp, state[1]);
+    tmp = AES_BLOCK_XOR(tmp, AES_BLOCK_AND(state[2], state[3]));
+    AES_BLOCK_STORE(dst, tmp);
+    AES_BLOCK_ENC_BARRIER();
+
+    /* Don't absorb the input, so that the keystream stays the same as the one from stream(). */
+    aegis256x4_update(state, zero);
+}
+
+static inline void
 aegis256x4_dec(uint8_t *const dst, const uint8_t *const src, aes_block_t *const state)
 {
     aes_block_t msg;
@@ -397,6 +418,27 @@ stream(uint8_t *out, size_t len, const uint8_t *npub, const uint8_t *k)
     }
     if (len % RATE) {
         aegis256x4_enc(dst, src, state);
+        memcpy(out + i, dst, len % RATE);
+    }
+}
+
+static void
+stream_xor(uint8_t *out, const uint8_t *in, size_t len, const uint8_t *npub, const uint8_t *k)
+{
+    aegis_blocks                    state;
+    CRYPTO_ALIGN(ALIGNMENT) uint8_t src[RATE];
+    CRYPTO_ALIGN(ALIGNMENT) uint8_t dst[RATE];
+    size_t                          i;
+
+    aegis256x4_init(k, npub, state);
+
+    for (i = 0; i + RATE <= len; i += RATE) {
+        aegis256x4_xor_keystream(out + i, in + i, state);
+    }
+    if (len % RATE) {
+        memset(src, 0, RATE);
+        memcpy(src, in + i, len % RATE);
+        aegis256x4_xor_keystream(dst, src, state);
         memcpy(out + i, dst, len % RATE);
     }
 }

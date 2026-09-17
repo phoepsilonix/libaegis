@@ -627,6 +627,44 @@ test "aegis128l - Random stream" {
     try testing.expect(!std.mem.eql(u8, &msg, &msg2));
 }
 
+test "stream_xor - all variants" {
+    try testing.expectEqual(aegis.aegis_init(), 0);
+
+    const variants = [_][]const u8{ "aegis128l", "aegis128x2", "aegis128x4", "aegis256", "aegis256x2", "aegis256x4" };
+    inline for (variants) |v| {
+        const stream = @field(aegis, v ++ "_stream");
+        const stream_xor = @field(aegis, v ++ "_stream_xor");
+        const encrypt_detached = @field(aegis, v ++ "_encrypt_detached");
+
+        var key: [@field(aegis, v ++ "_KEYBYTES")]u8 = undefined;
+        var nonce: [@field(aegis, v ++ "_NPUBBYTES")]u8 = undefined;
+        random.bytes(&key);
+        random.bytes(&nonce);
+
+        const zeros: [max_msg_len]u8 = @splat(0);
+        var msg: [max_msg_len]u8 = undefined;
+        var keystream: [max_msg_len]u8 = undefined;
+        var c: [max_msg_len]u8 = undefined;
+        var mac: [16]u8 = undefined;
+
+        for (0..max_msg_len + 1) |len| {
+            random.bytes(msg[0..len]);
+
+            // Encrypting zeros gives the raw keystream, which ties stream() to the AEAD test vectors.
+            try testing.expectEqual(encrypt_detached(&keystream, &mac, mac.len, &zeros, len, null, 0, &nonce, &key), 0);
+            stream(&c, len, &nonce, &key);
+            try testing.expectEqualSlices(u8, keystream[0..len], c[0..len]);
+
+            stream_xor(&c, &msg, len, &nonce, &key);
+            for (keystream[0..len], msg[0..len]) |*ks, m| ks.* ^= m;
+            try testing.expectEqualSlices(u8, keystream[0..len], c[0..len]);
+
+            stream_xor(&msg, &msg, len, &nonce, &key);
+            try testing.expectEqualSlices(u8, c[0..len], msg[0..len]);
+        }
+    }
+}
+
 test "aegis128l - MAC" {
     const key = [16]u8{ 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15 };
     const nonce: [16]u8 = @splat(0);
