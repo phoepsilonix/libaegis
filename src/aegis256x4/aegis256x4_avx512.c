@@ -27,14 +27,26 @@
 
 typedef __m512i aes_block_t;
 
-#        define AES_BLOCK_XOR(A, B) _mm512_xor_si512((A), (B))
-#        define AES_BLOCK_AND(A, B) _mm512_and_si512((A), (B))
+#        define AES_BLOCK_XOR(A, B)     _mm512_xor_si512((A), (B))
+#        define AES_BLOCK_XOR3(A, B, C) _mm512_ternarylogic_epi64((A), (B), (C), 0x96)
+#        define AES_BLOCK_AND(A, B)     _mm512_and_si512((A), (B))
 #        define AES_BLOCK_LOAD128_BROADCAST(A) \
             _mm512_broadcast_i32x4(_mm_loadu_si128((const void *) (A)))
 #        define AES_BLOCK_LOAD(A) _mm512_loadu_si512((const aes_block_t *) (const void *) (A))
 #        define AES_BLOCK_LOAD_64x2(A, B) _mm512_broadcast_i32x4(_mm_set_epi64x((A), (B)))
 #        define AES_BLOCK_STORE(A, B)     _mm512_storeu_si512((aes_block_t *) (void *) (A), (B))
 #        define AES_ENC(A, B)             _mm512_aesenc_epi128((A), (B))
+#        define AES_ENC0(A)               _mm512_aesenc_epi128((A), _mm512_setzero_si512())
+
+#        if defined(__GNUC__) || defined(__clang__)
+#            define AES_BLOCK_OR64(A)                                                        \
+                (((__v8di) (A))[0] | ((__v8di) (A))[1] | ((__v8di) (A))[2] | ((__v8di) (A))[3] | \
+                 ((__v8di) (A))[4] | ((__v8di) (A))[5] | ((__v8di) (A))[6] | ((__v8di) (A))[7])
+#            define AES_BLOCK_IS_CONST_ZERO(A) \
+                (__builtin_constant_p(AES_BLOCK_OR64(A)) && AES_BLOCK_OR64(A) == 0)
+#        else
+#            define AES_BLOCK_IS_CONST_ZERO(A) 0
+#        endif
 
 static inline void
 aegis256x4_update(aes_block_t *const state, const aes_block_t d)
@@ -47,7 +59,11 @@ aegis256x4_update(aes_block_t *const state, const aes_block_t d)
     state[3] = AES_ENC(state[2], state[3]);
     state[2] = AES_ENC(state[1], state[2]);
     state[1] = AES_ENC(state[0], state[1]);
-    state[0] = AES_BLOCK_XOR(AES_ENC(tmp, state[0]), d);
+    if (AES_BLOCK_IS_CONST_ZERO(d)) {
+        state[0] = AES_ENC(tmp, state[0]);
+    } else {
+        state[0] = AES_BLOCK_XOR3(AES_ENC0(tmp), state[0], d);
+    }
 }
 
 #        include "aegis256x4_common.h"
