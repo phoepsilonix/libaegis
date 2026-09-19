@@ -11,7 +11,7 @@ const iterations = 100000;
 fn bench_aegis256(io: Io, stdout: *Io.Writer) !void {
     var key: [aegis.aegis256_KEYBYTES]u8 = undefined;
     var nonce: [aegis.aegis256_NPUBBYTES]u8 = undefined;
-    var buf: [msg_len + aegis.aegis256_ABYTES_MIN]u8 = undefined;
+    var buf: [msg_len + aegis.aegis256_ABYTES_MIN]u8 align(64) = undefined;
 
     io.random(&key);
     io.random(&nonce);
@@ -41,7 +41,7 @@ fn bench_aegis256(io: Io, stdout: *Io.Writer) !void {
 fn bench_aegis256x2(io: Io, stdout: *Io.Writer) !void {
     var key: [aegis.aegis256x2_KEYBYTES]u8 = undefined;
     var nonce: [aegis.aegis256x2_NPUBBYTES]u8 = undefined;
-    var buf: [msg_len + aegis.aegis256x2_ABYTES_MIN]u8 = undefined;
+    var buf: [msg_len + aegis.aegis256x2_ABYTES_MIN]u8 align(64) = undefined;
 
     io.random(&key);
     io.random(&nonce);
@@ -71,7 +71,7 @@ fn bench_aegis256x2(io: Io, stdout: *Io.Writer) !void {
 fn bench_aegis256x4(io: Io, stdout: *Io.Writer) !void {
     var key: [aegis.aegis256x4_KEYBYTES]u8 = undefined;
     var nonce: [aegis.aegis256x4_NPUBBYTES]u8 = undefined;
-    var buf: [msg_len + aegis.aegis256x4_ABYTES_MIN]u8 = undefined;
+    var buf: [msg_len + aegis.aegis256x4_ABYTES_MIN]u8 align(64) = undefined;
 
     io.random(&key);
     io.random(&nonce);
@@ -101,7 +101,7 @@ fn bench_aegis256x4(io: Io, stdout: *Io.Writer) !void {
 fn bench_aegis128l(io: Io, stdout: *Io.Writer) !void {
     var key: [aegis.aegis128l_KEYBYTES]u8 = undefined;
     var nonce: [aegis.aegis128l_NPUBBYTES]u8 = undefined;
-    var buf: [msg_len + aegis.aegis128l_ABYTES_MIN]u8 = undefined;
+    var buf: [msg_len + aegis.aegis128l_ABYTES_MIN]u8 align(64) = undefined;
 
     io.random(&key);
     io.random(&nonce);
@@ -131,7 +131,7 @@ fn bench_aegis128l(io: Io, stdout: *Io.Writer) !void {
 fn bench_aegis128x2(io: Io, stdout: *Io.Writer) !void {
     var key: [aegis.aegis128x2_KEYBYTES]u8 = undefined;
     var nonce: [aegis.aegis128x2_NPUBBYTES]u8 = undefined;
-    var buf: [msg_len + aegis.aegis128x2_ABYTES_MIN]u8 = undefined;
+    var buf: [msg_len + aegis.aegis128x2_ABYTES_MIN]u8 align(64) = undefined;
 
     io.random(&key);
     io.random(&nonce);
@@ -161,7 +161,7 @@ fn bench_aegis128x2(io: Io, stdout: *Io.Writer) !void {
 fn bench_aegis128x4(io: Io, stdout: *Io.Writer) !void {
     var key: [aegis.aegis128x4_KEYBYTES]u8 = undefined;
     var nonce: [aegis.aegis128x4_NPUBBYTES]u8 = undefined;
-    var buf: [msg_len + aegis.aegis128x4_ABYTES_MIN]u8 = undefined;
+    var buf: [msg_len + aegis.aegis128x4_ABYTES_MIN]u8 align(64) = undefined;
 
     io.random(&key);
     io.random(&nonce);
@@ -191,7 +191,7 @@ fn bench_aegis128x4(io: Io, stdout: *Io.Writer) !void {
 fn bench_aegis128l_mac(io: Io, stdout: *Io.Writer) !void {
     var key: [aegis.aegis128l_KEYBYTES]u8 = undefined;
     var nonce: [aegis.aegis128l_NPUBBYTES]u8 = undefined;
-    var buf: [msg_len]u8 = undefined;
+    var buf: [msg_len]u8 align(64) = undefined;
     var st: aegis.aegis128l_mac_state align(32) = undefined;
 
     io.random(&key);
@@ -216,7 +216,7 @@ fn bench_aegis128l_mac(io: Io, stdout: *Io.Writer) !void {
 fn bench_aegis128x2_mac(io: Io, stdout: *Io.Writer) !void {
     var key: [aegis.aegis128x2_KEYBYTES]u8 = undefined;
     var nonce: [aegis.aegis128x2_NPUBBYTES]u8 = undefined;
-    var buf: [msg_len]u8 = undefined;
+    var buf: [msg_len]u8 align(64) = undefined;
     var st: aegis.aegis128x2_mac_state align(64) = undefined;
 
     io.random(&key);
@@ -241,7 +241,7 @@ fn bench_aegis128x2_mac(io: Io, stdout: *Io.Writer) !void {
 fn bench_aegis128x4_mac(io: Io, stdout: *Io.Writer) !void {
     var key: [aegis.aegis128x4_KEYBYTES]u8 = undefined;
     var nonce: [aegis.aegis128x4_NPUBBYTES]u8 = undefined;
-    var buf: [msg_len]u8 = undefined;
+    var buf: [msg_len]u8 align(64) = undefined;
     var st0: aegis.aegis128x4_mac_state align(64) = undefined;
 
     io.random(&key);
@@ -267,7 +267,7 @@ fn bench_aegis128x4_mac(io: Io, stdout: *Io.Writer) !void {
 fn bench_aegis256_mac(io: Io, stdout: *Io.Writer) !void {
     var key: [aegis.aegis256_KEYBYTES]u8 = undefined;
     var nonce: [aegis.aegis256_NPUBBYTES]u8 = undefined;
-    var buf: [msg_len]u8 = undefined;
+    var buf: [msg_len]u8 align(64) = undefined;
     var st: aegis.aegis256_mac_state = undefined;
 
     io.random(&key);
@@ -292,7 +292,7 @@ fn bench_aegis256_mac(io: Io, stdout: *Io.Writer) !void {
 fn bench_aegis256x2_mac(io: Io, stdout: *Io.Writer) !void {
     var key: [aegis.aegis256x2_KEYBYTES]u8 = undefined;
     var nonce: [aegis.aegis256x2_NPUBBYTES]u8 = undefined;
-    var buf: [msg_len]u8 = undefined;
+    var buf: [msg_len]u8 align(64) = undefined;
     var st0: aegis.aegis256x2_mac_state align(32) = undefined;
 
     io.random(&key);
@@ -318,7 +318,7 @@ fn bench_aegis256x2_mac(io: Io, stdout: *Io.Writer) !void {
 fn bench_aegis256x4_mac(io: Io, stdout: *Io.Writer) !void {
     var key: [aegis.aegis256x4_KEYBYTES]u8 = undefined;
     var nonce: [aegis.aegis256x2_NPUBBYTES]u8 = undefined;
-    var buf: [msg_len]u8 = undefined;
+    var buf: [msg_len]u8 align(64) = undefined;
     var st0: aegis.aegis256x4_mac_state align(64) = undefined;
 
     io.random(&key);
@@ -345,7 +345,7 @@ fn bench_stream(io: Io, stdout: *Io.Writer, comptime variant: []const u8, compti
     const stream = @field(aegis, variant ++ "_stream");
     var key: [@field(aegis, variant ++ "_KEYBYTES")]u8 = undefined;
     var nonce: [@field(aegis, variant ++ "_NPUBBYTES")]u8 = undefined;
-    var buf: [msg_len]u8 = undefined;
+    var buf: [msg_len]u8 align(64) = undefined;
 
     io.random(&key);
     io.random(&nonce);
@@ -366,7 +366,7 @@ fn bench_stream_xor(io: Io, stdout: *Io.Writer, comptime variant: []const u8, co
     const stream_xor = @field(aegis, variant ++ "_stream_xor");
     var key: [@field(aegis, variant ++ "_KEYBYTES")]u8 = undefined;
     var nonce: [@field(aegis, variant ++ "_NPUBBYTES")]u8 = undefined;
-    var buf: [msg_len]u8 = undefined;
+    var buf: [msg_len]u8 align(64) = undefined;
 
     io.random(&key);
     io.random(&nonce);
