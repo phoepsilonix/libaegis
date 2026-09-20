@@ -64,3 +64,5 @@ build
 
 .vscode
 .swival
+
+tmp/
