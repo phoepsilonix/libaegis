@@ -13,6 +13,7 @@
 #define aegis256x4_altivec_implementation  libaegis_aegis256x4_altivec_implementation
 #define aegis256x4_avx2_implementation     libaegis_aegis256x4_avx2_implementation
 #define aegis256x4_avx512_implementation   libaegis_aegis256x4_avx512_implementation
+#define aegis256x4_avx512vl_implementation libaegis_aegis256x4_avx512vl_implementation
 
 typedef struct aegis256x4_implementation {
     int (*encrypt_detached)(uint8_t *c, uint8_t *mac, size_t maclen, const uint8_t *m, size_t mlen,

@@ -4,7 +4,9 @@
 #include "common.h"
 #include "cpu.h"
 
+#if !defined(__GNUC__) && !defined(__clang__)
 static volatile uint16_t optblocker_u16;
+#endif
 
 #if defined(__GNUC__) || defined(__clang__)
 typedef uint64_t aegis_unaligned_u64 __attribute__((aligned(1), may_alias));
@@ -15,9 +17,11 @@ aegis_verify_n(const uint8_t *x_, const uint8_t *y_, const int n)
 {
     const volatile uint8_t *volatile x = (const volatile uint8_t *volatile) x_;
     const volatile uint8_t *volatile y = (const volatile uint8_t *volatile) y_;
+#if !defined(__GNUC__) && !defined(__clang__)
     volatile uint16_t d;
-    uint16_t          acc = 0U;
-    int               i   = 0;
+#endif
+    uint16_t acc = 0U;
+    int      i   = 0;
 
 #if defined(__GNUC__) || defined(__clang__)
     {
@@ -39,14 +43,19 @@ aegis_verify_n(const uint8_t *x_, const uint8_t *y_, const int n)
     for (; i < n; i++) {
         acc |= x[i] ^ y[i];
     }
-    d = acc;
 #if defined(__GNUC__) || defined(__clang__)
-    __asm__("" : "+r"(d) :);
-#endif
+    __asm__("" : "+r"(acc) :);
+    acc--;
+    acc >>= 15;
+
+    return (int) acc - 1;
+#else
+    d = acc;
     d--;
     d = ((d >> 13) ^ optblocker_u16) >> 2;
 
     return (int) d - 1;
+#endif
 }
 
 int

@@ -8,6 +8,7 @@
 #include "aegis256x4_altivec.h"
 #include "aegis256x4_avx2.h"
 #include "aegis256x4_avx512.h"
+#include "aegis256x4_avx512vl.h"
 #include "aegis256x4_neon_aes.h"
 
 #ifndef HAS_HW_AES
@@ -234,7 +235,12 @@ aegis256x4_pick_best_implementation(void)
 #if defined(__x86_64__) || defined(_M_AMD64) || defined(__i386__) || defined(_M_IX86)
 #    ifdef HAVE_VAESINTRIN_H
     if (aegis_runtime_has_vaes() && aegis_runtime_has_avx512f()) {
-        implementation = &aegis256x4_avx512_implementation;
+        /* Some CPUs run 512-bit AVX-512 as two 256-bit passes internally, and the 256-bit backend schedules better on those. */
+        if (aegis_runtime_has_avx512vl() && aegis_runtime_has_narrow_avx512()) {
+            implementation = &aegis256x4_avx512vl_implementation;
+        } else {
+            implementation = &aegis256x4_avx512_implementation;
+        }
         return 0;
     }
     if (aegis_runtime_has_vaes() && aegis_runtime_has_avx2()) {
