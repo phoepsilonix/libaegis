@@ -17,6 +17,14 @@ static int errno;
 
 #include "aegis.h"
 
+enum aegis_bulk_operation {
+    AEGIS_BULK_ENCRYPT,
+    AEGIS_BULK_DECRYPT,
+    AEGIS_BULK_ABSORB,
+    AEGIS_BULK_STREAM,
+    AEGIS_BULK_STREAM_XOR
+};
+
 #ifdef __linux__
 #    define HAVE_SYS_AUXV_H
 #    define HAVE_GETAUXVAL
@@ -89,6 +97,15 @@ static int errno;
 #    define CRYPTO_ALIGN(x) __declspec(align(x))
 #else
 #    define CRYPTO_ALIGN(x) __attribute__((aligned(x)))
+#endif
+
+#if defined(__has_attribute)
+#    if __has_attribute(code_align)
+#        define CRYPTO_ALIGN_LOOP(x) __attribute__((code_align(x)))
+#    endif
+#endif
+#ifndef CRYPTO_ALIGN_LOOP
+#    define CRYPTO_ALIGN_LOOP(x)
 #endif
 
 #define LOAD32_LE(SRC) load32_le(SRC)

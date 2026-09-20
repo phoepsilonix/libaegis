@@ -665,6 +665,157 @@ test "stream_xor - all variants" {
     }
 }
 
+test "bulk paths match short updates for all variants" {
+    try testing.expectEqual(aegis.aegis_init(), 0);
+
+    const max_len = 65537;
+    const msg_storage = try testing.allocator.alloc(u8, max_len + 3);
+    defer testing.allocator.free(msg_storage);
+    const ad_storage = try testing.allocator.alloc(u8, max_len + 3);
+    defer testing.allocator.free(ad_storage);
+    const c_storage = try testing.allocator.alloc(u8, max_len + 3);
+    defer testing.allocator.free(c_storage);
+    const out_storage = try testing.allocator.alloc(u8, max_len + 3);
+    defer testing.allocator.free(out_storage);
+    const zeros: [max_len]u8 = @splat(0);
+    for (msg_storage, 0..) |*byte, i| byte.* = @truncate(i * 13 + 7);
+    for (ad_storage, 0..) |*byte, i| byte.* = @truncate(i * 29 + 11);
+
+    const variants = [_][]const u8{ "aegis128l", "aegis128x2", "aegis128x4", "aegis256", "aegis256x2", "aegis256x4" };
+    inline for (variants) |v| {
+        const encrypt = @field(aegis, v ++ "_encrypt_detached");
+        const decrypt = @field(aegis, v ++ "_decrypt_detached");
+        const init = @field(aegis, v ++ "_state_init");
+        const enc_update = @field(aegis, v ++ "_state_encrypt_update");
+        const enc_final = @field(aegis, v ++ "_state_encrypt_final");
+        const dec_update = @field(aegis, v ++ "_state_decrypt_update");
+        const dec_final = @field(aegis, v ++ "_state_decrypt_final");
+        const mac_init = @field(aegis, v ++ "_mac_init");
+        const mac_update = @field(aegis, v ++ "_mac_update");
+        const mac_final = @field(aegis, v ++ "_mac_final");
+        const stream = @field(aegis, v ++ "_stream");
+        const stream_xor = @field(aegis, v ++ "_stream_xor");
+        const unauth_enc = @field(aegis, v ++ "_encrypt_unauthenticated");
+        const unauth_dec = @field(aegis, v ++ "_decrypt_unauthenticated");
+        const key: [@field(aegis, v ++ "_KEYBYTES")]u8 = @splat(0x42);
+        const nonce: [@field(aegis, v ++ "_NPUBBYTES")]u8 = @splat(0x24);
+        const zero_nonce: [nonce.len]u8 = @splat(0);
+        var state: @field(aegis, v ++ "_state") = undefined;
+        var mac_state: @field(aegis, v ++ "_mac_state") = undefined;
+
+        for ([_]usize{ 0, 127, 128, 129, 255, 256, 257, 511, 512, 513, 65535, 65536, max_len }) |len| {
+            const msg = msg_storage[1 .. len + 1];
+            const ad = ad_storage[3 .. len + 3];
+            const c = c_storage[2 .. len + 2];
+            const out = out_storage[1 .. len + 1];
+
+            inline for ([_]usize{ 16, 32 }) |tag_len| {
+                var tag: [tag_len]u8 = undefined;
+                var split_tag: [tag_len]u8 = undefined;
+
+                try testing.expectEqual(encrypt(c.ptr, &tag, tag_len, msg.ptr, len, ad.ptr, len, &nonce, &key), 0);
+                init(&state, ad.ptr, len, &nonce, &key);
+                var pos: usize = 0;
+                while (pos < len) {
+                    const n = @min(31, len - pos);
+                    try testing.expectEqual(enc_update(&state, out.ptr + pos, msg.ptr + pos, n), 0);
+                    pos += n;
+                }
+                try testing.expectEqual(enc_final(&state, &split_tag, tag_len), 0);
+                try testing.expectEqualSlices(u8, c, out);
+                try testing.expectEqualSlices(u8, &tag, &split_tag);
+
+                for ([_]usize{ 0, 1 }) |prefix_len| {
+                    const first = @min(prefix_len, len);
+                    @memcpy(out, msg);
+                    init(&state, ad.ptr, len, &nonce, &key);
+                    try testing.expectEqual(enc_update(&state, out.ptr, out.ptr, first), 0);
+                    try testing.expectEqual(enc_update(&state, out.ptr + first, out.ptr + first, len - first), 0);
+                    try testing.expectEqual(enc_final(&state, &split_tag, tag_len), 0);
+                    try testing.expectEqualSlices(u8, c, out);
+                    try testing.expectEqualSlices(u8, &tag, &split_tag);
+                }
+
+                @memcpy(out, msg);
+                try testing.expectEqual(encrypt(out.ptr, &split_tag, tag_len, out.ptr, len, ad.ptr, len, &nonce, &key), 0);
+                try testing.expectEqualSlices(u8, c, out);
+                try testing.expectEqualSlices(u8, &tag, &split_tag);
+                try testing.expectEqual(decrypt(out.ptr, out.ptr, len, &tag, tag_len, ad.ptr, len, &nonce, &key), 0);
+                try testing.expectEqualSlices(u8, msg, out);
+                try testing.expectEqual(decrypt(null, c.ptr, len, &tag, tag_len, ad.ptr, len, &nonce, &key), 0);
+
+                for ([_]usize{ 0, 1 }) |prefix_len| {
+                    const first = @min(prefix_len, len);
+                    for ([_]usize{ 31, max_len }) |chunk_len| {
+                        @memcpy(out, c);
+                        init(&state, ad.ptr, len, &nonce, &key);
+                        try testing.expectEqual(dec_update(&state, out.ptr, out.ptr, first), 0);
+                        pos = first;
+                        while (pos < len) {
+                            const n = @min(chunk_len, len - pos);
+                            try testing.expectEqual(dec_update(&state, out.ptr + pos, out.ptr + pos, n), 0);
+                            pos += n;
+                        }
+                        try testing.expectEqual(dec_final(&state, &tag, tag_len), 0);
+                        try testing.expectEqualSlices(u8, msg, out);
+                    }
+                    init(&state, ad.ptr, len, &nonce, &key);
+                    try testing.expectEqual(dec_update(&state, null, c.ptr, first), 0);
+                    try testing.expectEqual(dec_update(&state, null, c.ptr + first, len - first), 0);
+                    try testing.expectEqual(dec_final(&state, &tag, tag_len), 0);
+                }
+
+                tag[tag_len - 1] ^= 1;
+                @memcpy(out, c);
+                try testing.expectEqual(decrypt(out.ptr, out.ptr, len, &tag, tag_len, ad.ptr, len, &nonce, &key), -1);
+                try testing.expectEqualSlices(u8, zeros[0..len], out);
+                try testing.expectEqual(decrypt(null, c.ptr, len, &tag, tag_len, ad.ptr, len, &nonce, &key), -1);
+
+                mac_init(&mac_state, &key, &nonce);
+                try testing.expectEqual(mac_update(&mac_state, msg.ptr, len), 0);
+                try testing.expectEqual(mac_final(&mac_state, &tag, tag_len), 0);
+                mac_init(&mac_state, &key, &nonce);
+                pos = 0;
+                while (pos < len) {
+                    const n = @min(31, len - pos);
+                    try testing.expectEqual(mac_update(&mac_state, msg.ptr + pos, n), 0);
+                    pos += n;
+                }
+                try testing.expectEqual(mac_final(&mac_state, &split_tag, tag_len), 0);
+                try testing.expectEqualSlices(u8, &tag, &split_tag);
+
+                const first = @min(1, len);
+                mac_init(&mac_state, &key, &nonce);
+                try testing.expectEqual(mac_update(&mac_state, msg.ptr, first), 0);
+                try testing.expectEqual(mac_update(&mac_state, msg.ptr + first, len - first), 0);
+                try testing.expectEqual(mac_final(&mac_state, &split_tag, tag_len), 0);
+                try testing.expectEqualSlices(u8, &tag, &split_tag);
+            }
+
+            var tag: [16]u8 = undefined;
+            try testing.expectEqual(encrypt(c.ptr, &tag, tag.len, &zeros, len, null, 0, &nonce, &key), 0);
+            stream(out.ptr, len, &nonce, &key);
+            try testing.expectEqualSlices(u8, c, out);
+            for (c, msg) |*byte, m| byte.* ^= m;
+            @memcpy(out, msg);
+            stream_xor(out.ptr, out.ptr, len, &nonce, &key);
+            try testing.expectEqualSlices(u8, c, out);
+            stream_xor(out.ptr, out.ptr, len, &nonce, &key);
+            try testing.expectEqualSlices(u8, msg, out);
+            stream(c.ptr, len, &zero_nonce, &key);
+            stream(out.ptr, len, null, &key);
+            try testing.expectEqualSlices(u8, c, out);
+
+            try testing.expectEqual(encrypt(c.ptr, &tag, tag.len, msg.ptr, len, null, 0, &nonce, &key), 0);
+            @memcpy(out, msg);
+            unauth_enc(out.ptr, out.ptr, len, &nonce, &key);
+            try testing.expectEqualSlices(u8, c, out);
+            unauth_dec(out.ptr, out.ptr, len, &nonce, &key);
+            try testing.expectEqualSlices(u8, msg, out);
+        }
+    }
+}
+
 test "aegis128l - MAC" {
     const key = [16]u8{ 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15 };
     const nonce: [16]u8 = @splat(0);
