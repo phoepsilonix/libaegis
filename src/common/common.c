@@ -6,17 +6,40 @@
 
 static volatile uint16_t optblocker_u16;
 
+#if defined(__GNUC__) || defined(__clang__)
+typedef uint64_t aegis_unaligned_u64 __attribute__((aligned(1), may_alias));
+#endif
+
 static inline int
 aegis_verify_n(const uint8_t *x_, const uint8_t *y_, const int n)
 {
     const volatile uint8_t *volatile x = (const volatile uint8_t *volatile) x_;
     const volatile uint8_t *volatile y = (const volatile uint8_t *volatile) y_;
-    volatile uint16_t d                = 0U;
-    int               i;
+    volatile uint16_t d;
+    uint16_t          acc = 0U;
+    int               i   = 0;
 
-    for (i = 0; i < n; i++) {
-        d |= x[i] ^ y[i];
+#if defined(__GNUC__) || defined(__clang__)
+    {
+        const volatile aegis_unaligned_u64 *volatile x64 =
+            (const volatile aegis_unaligned_u64 *volatile) (const void *) x_;
+        const volatile aegis_unaligned_u64 *volatile y64 =
+            (const volatile aegis_unaligned_u64 *volatile) (const void *) y_;
+        uint64_t acc64 = 0U;
+
+        for (; i + 8 <= n; i += 8) {
+            acc64 |= x64[i / 8] ^ y64[i / 8];
+        }
+        acc64 |= acc64 >> 32;
+        acc64 |= acc64 >> 16;
+        acc64 |= acc64 >> 8;
+        acc = (uint16_t) (acc64 & 0xff);
     }
+#endif
+    for (; i < n; i++) {
+        acc |= x[i] ^ y[i];
+    }
+    d = acc;
 #if defined(__GNUC__) || defined(__clang__)
     __asm__("" : "+r"(d) :);
 #endif
