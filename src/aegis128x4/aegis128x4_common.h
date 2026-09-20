@@ -228,6 +228,16 @@ aegis128x4_xor_keystream(uint8_t *const dst, const uint8_t *const src, aes_block
 }
 
 static inline void
+aegis128x4_keystream(uint8_t *const dst, aes_block_t *const state)
+{
+    aegis128x4_squeeze_keystream(dst, state);
+    AES_BLOCK_ENC_BARRIER();
+
+    /* Same output as enc() on a zeroed block, without paying to absorb the zeros. */
+    aegis128x4_update_nodata(state);
+}
+
+static inline void
 aegis128x4_dec(uint8_t *const dst, const uint8_t *const src, aes_block_t *const state)
 {
     aes_block_t msg0, msg1;
@@ -486,16 +496,16 @@ stream(uint8_t *out, size_t len, const uint8_t *npub, const uint8_t *k)
 
     i = AEGIS_STREAM_BULK(out, src, len, state);
     for (; i + 4 * RATE <= len; i += 4 * RATE) {
-        aegis128x4_enc(out + i, src, state);
-        aegis128x4_enc(out + i + RATE, src, state);
-        aegis128x4_enc(out + i + 2 * RATE, src, state);
-        aegis128x4_enc(out + i + 3 * RATE, src, state);
+        aegis128x4_keystream(out + i, state);
+        aegis128x4_keystream(out + i + RATE, state);
+        aegis128x4_keystream(out + i + 2 * RATE, state);
+        aegis128x4_keystream(out + i + 3 * RATE, state);
     }
     for (; i + RATE <= len; i += RATE) {
-        aegis128x4_enc(out + i, src, state);
+        aegis128x4_keystream(out + i, state);
     }
     if (len % RATE) {
-        aegis128x4_enc(dst, src, state);
+        aegis128x4_keystream(dst, state);
         memcpy(out + i, dst, len % RATE);
     }
 }

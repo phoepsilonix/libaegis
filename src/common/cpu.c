@@ -308,7 +308,8 @@ _runtime_intel_cpu_features(CPUFeatures *const cpu_features)
             _cpuid(ext_info, 0x80000000);
             if (ext_info[0] >= 0x8000001a) {
                 _cpuid(ext_info, 0x8000001a);
-                /* If this bit is clear, the CPU runs 512-bit AVX-512 as two 256-bit passes, so the narrower backend will actually be faster. */
+                /* A clear bit means the CPU runs 512-bit AVX-512 as two 256-bit passes.
+                 * Only AEGIS-256X4 gets faster with the narrower backend there; AEGIS-128X4 measured slower on Zen 4 and stays on the 512-bit one. */
                 if ((ext_info[0] & 0x00000008) == 0x0) {
                     cpu_features->has_narrow_avx512 = 1;
                 }
