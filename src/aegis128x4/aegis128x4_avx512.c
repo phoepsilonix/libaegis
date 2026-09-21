@@ -74,7 +74,9 @@ aegis128x4_update_nodata(aes_block_t *const state)
     state[0] = AES_ENC(tmp, state[0]);
 }
 
-#        define AEGIS_UNROLL_X4 1
+#        if defined(__x86_64__) || defined(_M_AMD64)
+#            define AEGIS_UNROLL_X4 1
+#        endif
 
 #        include "aegis128x4_common.h"
 

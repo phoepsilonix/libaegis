@@ -71,7 +71,9 @@ aegis256x4_update_nodata(aes_block_t *const state)
 }
 
 /* 32 vector registers: four blocks in flight pay off here. */
-#        define AEGIS_UNROLL_X4 1
+#        if defined(__x86_64__) || defined(_M_AMD64)
+#            define AEGIS_UNROLL_X4 1
+#        endif
 
 #        include "aegis256x4_common.h"
 
