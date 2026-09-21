@@ -114,8 +114,8 @@ AES_ROUND(const aes_block_t a, const aes_block_t b)
  * S0 is held as x0 XOR y0, separating its input XOR from the AES round on S5.
  */
 static inline __attribute__((always_inline)) size_t
-aegis256x2_crypt_bulk(uint8_t *dst, const uint8_t *src, size_t len, aes_block_t *state,
-                    const enum aegis_bulk_operation operation, const int store_output)
+aegis256x2_bulk(uint8_t *dst, const uint8_t *src, size_t len, aes_block_t *state,
+                const enum aegis_bulk_operation operation, const int store_output)
 {
     const size_t      full = len - len % 32;
     const aes_block_t zero = { vmovq_n_u8(0), vmovq_n_u8(0) };
@@ -138,16 +138,18 @@ aegis256x2_crypt_bulk(uint8_t *dst, const uint8_t *src, size_t len, aes_block_t 
     for (i = 0; i < full; i += 32) {
         aes_block_t m, z, r0, r1, r4, r5;
 
-        if (operation == AEGIS_BULK_ENCRYPT) {
+        if (operation != AEGIS_BULK_DECRYPT) {
             r1 = AES_ROUND(x0, y0);
         }
-        m = AES_BLOCK_LOAD(src + i);
+        m = operation == AEGIS_BULK_STREAM ? zero : AES_BLOCK_LOAD(src + i);
         z = AES_BLOCK_BCAX(AES_BLOCK_XOR3(m, t5, s1), s2, s3);
         if (store_output) {
             AES_BLOCK_STORE(dst + i, z);
         }
         if (operation == AEGIS_BULK_DECRYPT) {
             m = z;
+        } else if (operation == AEGIS_BULK_STREAM_XOR) {
+            m = zero;
         }
         r0 = AES_ROUND(t5, s4);
         r5 = AES_ROUND(s4, zero);
@@ -156,7 +158,7 @@ aegis256x2_crypt_bulk(uint8_t *dst, const uint8_t *src, size_t len, aes_block_t 
         s4 = AES_BLOCK_XOR(s4, r4);
         s3 = AES_BLOCK_XOR(s3, AES_ROUND(s2, zero));
         s2 = AES_BLOCK_XOR(s2, AES_ROUND(s1, zero));
-        if (operation != AEGIS_BULK_ENCRYPT) {
+        if (operation == AEGIS_BULK_DECRYPT) {
             r1 = AES_ROUND(x0, y0);
         }
         s1 = AES_BLOCK_XOR(s1, r1);
@@ -176,20 +178,37 @@ aegis256x2_crypt_bulk(uint8_t *dst, const uint8_t *src, size_t len, aes_block_t 
 static __attribute__((noinline)) size_t
 aegis256x2_encrypt_bulk(uint8_t *dst, const uint8_t *src, size_t len, aes_block_t *state)
 {
-    return aegis256x2_crypt_bulk(dst, src, len, state, AEGIS_BULK_ENCRYPT, 1);
+    return aegis256x2_bulk(dst, src, len, state, AEGIS_BULK_ENCRYPT, 1);
 }
+
+#        define AEGIS_ENCRYPT_BULK aegis256x2_encrypt_bulk
 
 static __attribute__((noinline)) size_t
 aegis256x2_decrypt_bulk(uint8_t *dst, const uint8_t *src, size_t len, aes_block_t *state)
 {
     if (dst == NULL) {
-        return aegis256x2_crypt_bulk(dst, src, len, state, AEGIS_BULK_DECRYPT, 0);
+        return aegis256x2_bulk(dst, src, len, state, AEGIS_BULK_DECRYPT, 0);
     }
-    return aegis256x2_crypt_bulk(dst, src, len, state, AEGIS_BULK_DECRYPT, 1);
+    return aegis256x2_bulk(dst, src, len, state, AEGIS_BULK_DECRYPT, 1);
 }
 
-#        define AEGIS_ENCRYPT_BULK aegis256x2_encrypt_bulk
 #        define AEGIS_DECRYPT_BULK aegis256x2_decrypt_bulk
+
+static __attribute__((noinline)) size_t
+aegis256x2_stream_bulk(uint8_t *dst, const uint8_t *src, size_t len, aes_block_t *state)
+{
+    return aegis256x2_bulk(dst, src, len, state, AEGIS_BULK_STREAM, 1);
+}
+
+#        define AEGIS_STREAM_BULK aegis256x2_stream_bulk
+
+static __attribute__((noinline)) size_t
+aegis256x2_stream_xor_bulk(uint8_t *dst, const uint8_t *src, size_t len, aes_block_t *state)
+{
+    return aegis256x2_bulk(dst, src, len, state, AEGIS_BULK_STREAM_XOR, 1);
+}
+
+#        define AEGIS_STREAM_XOR_BULK aegis256x2_stream_xor_bulk
 
 #    endif
 

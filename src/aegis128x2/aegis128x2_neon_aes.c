@@ -122,12 +122,13 @@ AES_ENC_BULK(const aes_block_t a, const aes_block_t b)
  * AESE cancels these complements with an all-ones key.
  */
 static inline __attribute__((always_inline)) size_t
-aegis128x2_crypt_bulk(uint8_t *dst, const uint8_t *src, size_t len, aes_block_t *state,
-                    const int decrypt)
+aegis128x2_bulk(uint8_t *dst, const uint8_t *src, size_t len, aes_block_t *state,
+                const enum aegis_bulk_operation operation)
 {
-    const size_t full = len - len % 64;
-    aes_block_t  s0, s1, s2, s3, s4, s5, s6, s7;
-    size_t       i;
+    const aes_block_t zero = { vmovq_n_u8(0), vmovq_n_u8(0) };
+    const size_t      full = len - len % 64;
+    aes_block_t       s0, s1, s2, s3, s4, s5, s6, s7;
+    size_t            i;
 
     if (full < 256) {
         return 0;
@@ -144,17 +145,25 @@ aegis128x2_crypt_bulk(uint8_t *dst, const uint8_t *src, size_t len, aes_block_t 
     for (i = 0; i < full; i += 64) {
         aes_block_t m0, m1, z0, z1, t;
 
-        m0 = AES_BLOCK_LOAD(src + i);
-        m1 = AES_BLOCK_LOAD(src + i + 32);
+        if (operation == AEGIS_BULK_STREAM) {
+            m0 = zero;
+            m1 = zero;
+        } else {
+            m0 = AES_BLOCK_LOAD(src + i);
+            m1 = AES_BLOCK_LOAD(src + i + 32);
+        }
         z0 = AES_BLOCK_BCAX(AES_BLOCK_XOR3(m0, s6, s1), s2, s3);
         z1 = AES_BLOCK_BCAX(AES_BLOCK_XOR3(m1, s5, s2), s6, s7);
-        if (!decrypt || dst != NULL) {
+        if (operation != AEGIS_BULK_DECRYPT || dst != NULL) {
             AES_BLOCK_STORE(dst + i, z0);
             AES_BLOCK_STORE(dst + i + 32, z1);
         }
-        if (decrypt) {
+        if (operation == AEGIS_BULK_DECRYPT) {
             m0 = z0;
             m1 = z1;
+        } else if (operation == AEGIS_BULK_STREAM_XOR) {
+            m0 = zero;
+            m1 = zero;
         }
         t  = s7;
         s7 = AES_ENC_BULK(s6, s7);
@@ -178,10 +187,37 @@ aegis128x2_crypt_bulk(uint8_t *dst, const uint8_t *src, size_t len, aes_block_t 
     return full;
 }
 
-#        define AEGIS_ENCRYPT_BULK(dst, src, len, state) \
-            aegis128x2_crypt_bulk(dst, src, len, state, 0)
-#        define AEGIS_DECRYPT_BULK(dst, src, len, state) \
-            aegis128x2_crypt_bulk(dst, src, len, state, 1)
+static __attribute__((noinline)) size_t
+aegis128x2_encrypt_bulk(uint8_t *dst, const uint8_t *src, size_t len, aes_block_t *state)
+{
+    return aegis128x2_bulk(dst, src, len, state, AEGIS_BULK_ENCRYPT);
+}
+
+#        define AEGIS_ENCRYPT_BULK aegis128x2_encrypt_bulk
+
+static __attribute__((noinline)) size_t
+aegis128x2_decrypt_bulk(uint8_t *dst, const uint8_t *src, size_t len, aes_block_t *state)
+{
+    return aegis128x2_bulk(dst, src, len, state, AEGIS_BULK_DECRYPT);
+}
+
+#        define AEGIS_DECRYPT_BULK aegis128x2_decrypt_bulk
+
+static __attribute__((noinline)) size_t
+aegis128x2_stream_bulk(uint8_t *dst, const uint8_t *src, size_t len, aes_block_t *state)
+{
+    return aegis128x2_bulk(dst, src, len, state, AEGIS_BULK_STREAM);
+}
+
+#        define AEGIS_STREAM_BULK aegis128x2_stream_bulk
+
+static __attribute__((noinline)) size_t
+aegis128x2_stream_xor_bulk(uint8_t *dst, const uint8_t *src, size_t len, aes_block_t *state)
+{
+    return aegis128x2_bulk(dst, src, len, state, AEGIS_BULK_STREAM_XOR);
+}
+
+#        define AEGIS_STREAM_XOR_BULK aegis128x2_stream_xor_bulk
 
 #    endif
 

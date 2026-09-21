@@ -4,6 +4,12 @@
 #ifndef AEGIS_DECRYPT_BULK
 #    define AEGIS_DECRYPT_BULK(dst, src, len, state) 0
 #endif
+#ifndef AEGIS_STREAM_BULK
+#    define AEGIS_STREAM_BULK(dst, src, len, state) 0
+#endif
+#ifndef AEGIS_STREAM_XOR_BULK
+#    define AEGIS_STREAM_XOR_BULK(dst, src, len, state) 0
+#endif
 
 #define RATE      64
 #define ALIGNMENT 64
@@ -410,7 +416,7 @@ stream(uint8_t *out, size_t len, const uint8_t *npub, const uint8_t *k)
 
     aegis128x2_init(k, npub, state);
 
-    for (i = 0; i + RATE <= len; i += RATE) {
+    for (i = AEGIS_STREAM_BULK(out, src, len, state); i + RATE <= len; i += RATE) {
         aegis128x2_enc(out + i, src, state);
     }
     if (len % RATE) {
@@ -429,7 +435,7 @@ stream_xor(uint8_t *out, const uint8_t *in, size_t len, const uint8_t *npub, con
 
     aegis128x2_init(k, npub, state);
 
-    for (i = 0; i + RATE <= len; i += RATE) {
+    for (i = AEGIS_STREAM_XOR_BULK(out, in, len, state); i + RATE <= len; i += RATE) {
         aegis128x2_xor_keystream(out + i, in + i, state);
     }
     if (len % RATE) {
