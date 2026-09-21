@@ -9,6 +9,19 @@
 #define CTX_TYPE       CONCAT3(VARIANT, _raf_, ctx)
 #define MAC_STATE_TYPE CONCAT3(VARIANT, _mac_, state)
 
+static inline aegis_raf_ctx_internal *
+ctx_internal(CTX_TYPE *ctx)
+{
+    COMPILER_ASSERT(sizeof(aegis_raf_ctx_internal) + AEGIS_RAF_CTX_ALIGN <= sizeof(CTX_TYPE));
+    return (aegis_raf_ctx_internal *) AEGIS_RAF_CTX_ADDR(ctx);
+}
+
+static inline const aegis_raf_ctx_internal *
+ctx_internal_const(const CTX_TYPE *ctx)
+{
+    return (const aegis_raf_ctx_internal *) AEGIS_RAF_CTX_ADDR(ctx);
+}
+
 #define KDF_CONST     "aegis-raf-kdf-v1"
 #define KDF_CONST_LEN 16
 
@@ -417,8 +430,7 @@ FN(create)(CTX_TYPE *ctx, const aegis_raf_io *io, const aegis_raf_rng *rng,
         return -1;
     }
 
-    internal = (aegis_raf_ctx_internal *) ctx;
-    COMPILER_ASSERT(sizeof(CTX_TYPE) >= sizeof(aegis_raf_ctx_internal));
+    internal = ctx_internal(ctx);
     memset(internal, 0, sizeof(aegis_raf_ctx_internal));
 
     internal->io         = *io;
@@ -493,8 +505,7 @@ FN(open)(CTX_TYPE *ctx, const aegis_raf_io *io, const aegis_raf_rng *rng,
         return -1;
     }
 
-    internal = (aegis_raf_ctx_internal *) ctx;
-    COMPILER_ASSERT(sizeof(CTX_TYPE) >= sizeof(aegis_raf_ctx_internal));
+    internal = ctx_internal(ctx);
     memset(internal, 0, sizeof(aegis_raf_ctx_internal));
 
     internal->io        = *io;
@@ -556,7 +567,7 @@ FN(open)(CTX_TYPE *ctx, const aegis_raf_io *io, const aegis_raf_rng *rng,
 int
 FN(read)(CTX_TYPE *ctx, uint8_t *out, size_t *bytes_read, size_t len, uint64_t offset)
 {
-    aegis_raf_ctx_internal *internal = (aegis_raf_ctx_internal *) ctx;
+    aegis_raf_ctx_internal *internal = ctx_internal(ctx);
     size_t                  total_read;
     uint64_t                chunk_idx;
     size_t                  offset_in_chunk;
@@ -771,7 +782,7 @@ write_impl(aegis_raf_ctx_internal *internal, size_t *bytes_written, const uint8_
 int
 FN(write)(CTX_TYPE *ctx, size_t *bytes_written, const uint8_t *in, size_t len, uint64_t offset)
 {
-    aegis_raf_ctx_internal *internal = (aegis_raf_ctx_internal *) ctx;
+    aegis_raf_ctx_internal *internal = ctx_internal(ctx);
 
     if (ctx == NULL || bytes_written == NULL || (len > 0 && in == NULL)) {
         errno = EINVAL;
@@ -792,7 +803,7 @@ FN(write)(CTX_TYPE *ctx, size_t *bytes_written, const uint8_t *in, size_t len, u
 int
 FN(truncate)(CTX_TYPE *ctx, uint64_t size)
 {
-    aegis_raf_ctx_internal *internal = (aegis_raf_ctx_internal *) ctx;
+    aegis_raf_ctx_internal *internal = ctx_internal(ctx);
     size_t                  written;
     uint64_t                old_num_chunks;
     uint64_t                new_num_chunks;
@@ -873,7 +884,7 @@ FN(truncate)(CTX_TYPE *ctx, uint64_t size)
 int
 FN(get_size)(const CTX_TYPE *ctx, uint64_t *size)
 {
-    const aegis_raf_ctx_internal *internal = (const aegis_raf_ctx_internal *) ctx;
+    const aegis_raf_ctx_internal *internal = ctx_internal_const(ctx);
 
     if (ctx == NULL || size == NULL) {
         errno = EINVAL;
@@ -890,7 +901,7 @@ FN(get_size)(const CTX_TYPE *ctx, uint64_t *size)
 int
 FN(sync)(CTX_TYPE *ctx)
 {
-    aegis_raf_ctx_internal *internal = (aegis_raf_ctx_internal *) ctx;
+    aegis_raf_ctx_internal *internal = ctx_internal(ctx);
 
     if (ctx == NULL) {
         errno = EINVAL;
@@ -909,7 +920,7 @@ FN(sync)(CTX_TYPE *ctx)
 void
 FN(close)(CTX_TYPE *ctx)
 {
-    aegis_raf_ctx_internal *internal = (aegis_raf_ctx_internal *) ctx;
+    aegis_raf_ctx_internal *internal = ctx_internal(ctx);
 
     if (ctx == NULL) {
         return;
@@ -925,7 +936,7 @@ FN(close)(CTX_TYPE *ctx)
 int
 FN(merkle_rebuild)(CTX_TYPE *ctx)
 {
-    aegis_raf_ctx_internal *internal = (aegis_raf_ctx_internal *) ctx;
+    aegis_raf_ctx_internal *internal = ctx_internal(ctx);
     uint64_t                num_chunks;
     uint64_t                ci;
     size_t                  chunk_len;
@@ -991,7 +1002,7 @@ FN(merkle_rebuild)(CTX_TYPE *ctx)
 int
 FN(merkle_verify)(CTX_TYPE *ctx, uint64_t *corrupted_chunk)
 {
-    aegis_raf_ctx_internal *internal = (aegis_raf_ctx_internal *) ctx;
+    aegis_raf_ctx_internal *internal = ctx_internal(ctx);
     uint64_t                num_chunks;
     uint64_t                ci;
     size_t                  chunk_len;
@@ -1155,7 +1166,7 @@ cleanup:
 int
 FN(merkle_commitment)(const CTX_TYPE *ctx, uint8_t *out, size_t out_len)
 {
-    const aegis_raf_ctx_internal *internal = (const aegis_raf_ctx_internal *) ctx;
+    const aegis_raf_ctx_internal *internal = ctx_internal_const(ctx);
     uint8_t                       commit_ctx[AEGIS_RAF_COMMITMENT_CONTEXT_BYTES];
 
     if (ctx == NULL) {

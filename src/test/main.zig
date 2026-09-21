@@ -710,14 +710,24 @@ test "bulk paths match short updates for all variants" {
         const mac_init = @field(aegis, v ++ "_mac_init");
         const mac_update = @field(aegis, v ++ "_mac_update");
         const mac_final = @field(aegis, v ++ "_mac_final");
+        const mac_clone = @field(aegis, v ++ "_mac_state_clone");
         const stream = @field(aegis, v ++ "_stream");
         const stream_xor = @field(aegis, v ++ "_stream_xor");
         const unauth_enc = @field(aegis, v ++ "_encrypt_unauthenticated");
         const unauth_dec = @field(aegis, v ++ "_decrypt_unauthenticated");
         const key: [@field(aegis, v ++ "_KEYBYTES")]u8 = @splat(0x42);
         const nonce: [@field(aegis, v ++ "_NPUBBYTES")]u8 = @splat(0x24);
-        var state: @field(aegis, v ++ "_state") = undefined;
-        var mac_state: @field(aegis, v ++ "_mac_state") = undefined;
+        const State = @field(aegis, v ++ "_state");
+        const MacState = @field(aegis, v ++ "_mac_state");
+        var state_storage: [@sizeOf(State) + 1]u8 align(64) = undefined;
+        var mac_state_storage: [@sizeOf(MacState) + 1]u8 align(64) = undefined;
+        var mac_copy_storage: [@sizeOf(MacState) + 2]u8 align(64) = undefined;
+        const state: *State = @ptrCast(&state_storage[1]);
+        const mac_state: *MacState = @ptrCast(&mac_state_storage[1]);
+        const mac_copy: *MacState = @ptrCast(&mac_copy_storage[2]);
+
+        try testing.expect(@alignOf(State) == 1);
+        try testing.expect(@alignOf(MacState) == 1);
 
         for ([_]usize{ 0, 127, 128, 129, 255, 256, 257, 511, 512, 513, 65535, 65536, max_len }) |len| {
             const msg = msg_storage[1 .. len + 1];
@@ -728,26 +738,27 @@ test "bulk paths match short updates for all variants" {
             inline for ([_]usize{ 16, 32 }) |tag_len| {
                 var tag: [tag_len]u8 = undefined;
                 var split_tag: [tag_len]u8 = undefined;
+                var cloned_tag: [tag_len]u8 = undefined;
 
                 try testing.expectEqual(encrypt(c.ptr, &tag, tag_len, msg.ptr, len, ad.ptr, len, &nonce, &key), 0);
-                init(&state, ad.ptr, len, &nonce, &key);
+                init(state, ad.ptr, len, &nonce, &key);
                 var pos: usize = 0;
                 while (pos < len) {
                     const n = @min(31, len - pos);
-                    try testing.expectEqual(enc_update(&state, out.ptr + pos, msg.ptr + pos, n), 0);
+                    try testing.expectEqual(enc_update(state, out.ptr + pos, msg.ptr + pos, n), 0);
                     pos += n;
                 }
-                try testing.expectEqual(enc_final(&state, &split_tag, tag_len), 0);
+                try testing.expectEqual(enc_final(state, &split_tag, tag_len), 0);
                 try testing.expectEqualSlices(u8, c, out);
                 try testing.expectEqualSlices(u8, &tag, &split_tag);
 
                 for ([_]usize{ 0, 1 }) |prefix_len| {
                     const first = @min(prefix_len, len);
                     @memcpy(out, msg);
-                    init(&state, ad.ptr, len, &nonce, &key);
-                    try testing.expectEqual(enc_update(&state, out.ptr, out.ptr, first), 0);
-                    try testing.expectEqual(enc_update(&state, out.ptr + first, out.ptr + first, len - first), 0);
-                    try testing.expectEqual(enc_final(&state, &split_tag, tag_len), 0);
+                    init(state, ad.ptr, len, &nonce, &key);
+                    try testing.expectEqual(enc_update(state, out.ptr, out.ptr, first), 0);
+                    try testing.expectEqual(enc_update(state, out.ptr + first, out.ptr + first, len - first), 0);
+                    try testing.expectEqual(enc_final(state, &split_tag, tag_len), 0);
                     try testing.expectEqualSlices(u8, c, out);
                     try testing.expectEqualSlices(u8, &tag, &split_tag);
                 }
@@ -764,21 +775,21 @@ test "bulk paths match short updates for all variants" {
                     const first = @min(prefix_len, len);
                     for ([_]usize{ 31, max_len }) |chunk_len| {
                         @memcpy(out, c);
-                        init(&state, ad.ptr, len, &nonce, &key);
-                        try testing.expectEqual(dec_update(&state, out.ptr, out.ptr, first), 0);
+                        init(state, ad.ptr, len, &nonce, &key);
+                        try testing.expectEqual(dec_update(state, out.ptr, out.ptr, first), 0);
                         pos = first;
                         while (pos < len) {
                             const n = @min(chunk_len, len - pos);
-                            try testing.expectEqual(dec_update(&state, out.ptr + pos, out.ptr + pos, n), 0);
+                            try testing.expectEqual(dec_update(state, out.ptr + pos, out.ptr + pos, n), 0);
                             pos += n;
                         }
-                        try testing.expectEqual(dec_final(&state, &tag, tag_len), 0);
+                        try testing.expectEqual(dec_final(state, &tag, tag_len), 0);
                         try testing.expectEqualSlices(u8, msg, out);
                     }
-                    init(&state, ad.ptr, len, &nonce, &key);
-                    try testing.expectEqual(dec_update(&state, null, c.ptr, first), 0);
-                    try testing.expectEqual(dec_update(&state, null, c.ptr + first, len - first), 0);
-                    try testing.expectEqual(dec_final(&state, &tag, tag_len), 0);
+                    init(state, ad.ptr, len, &nonce, &key);
+                    try testing.expectEqual(dec_update(state, null, c.ptr, first), 0);
+                    try testing.expectEqual(dec_update(state, null, c.ptr + first, len - first), 0);
+                    try testing.expectEqual(dec_final(state, &tag, tag_len), 0);
                 }
 
                 tag[tag_len - 1] ^= 1;
@@ -787,24 +798,27 @@ test "bulk paths match short updates for all variants" {
                 try testing.expectEqualSlices(u8, zeros[0..len], out);
                 try testing.expectEqual(decrypt(null, c.ptr, len, &tag, tag_len, ad.ptr, len, &nonce, &key), -1);
 
-                mac_init(&mac_state, &key, &nonce);
-                try testing.expectEqual(mac_update(&mac_state, msg.ptr, len), 0);
-                try testing.expectEqual(mac_final(&mac_state, &tag, tag_len), 0);
-                mac_init(&mac_state, &key, &nonce);
+                mac_init(mac_state, &key, &nonce);
+                try testing.expectEqual(mac_update(mac_state, msg.ptr, len), 0);
+                mac_clone(mac_copy, mac_state);
+                try testing.expectEqual(mac_final(mac_state, &tag, tag_len), 0);
+                try testing.expectEqual(mac_final(mac_copy, &cloned_tag, tag_len), 0);
+                try testing.expectEqualSlices(u8, &tag, &cloned_tag);
+                mac_init(mac_state, &key, &nonce);
                 pos = 0;
                 while (pos < len) {
                     const n = @min(31, len - pos);
-                    try testing.expectEqual(mac_update(&mac_state, msg.ptr + pos, n), 0);
+                    try testing.expectEqual(mac_update(mac_state, msg.ptr + pos, n), 0);
                     pos += n;
                 }
-                try testing.expectEqual(mac_final(&mac_state, &split_tag, tag_len), 0);
+                try testing.expectEqual(mac_final(mac_state, &split_tag, tag_len), 0);
                 try testing.expectEqualSlices(u8, &tag, &split_tag);
 
                 const first = @min(1, len);
-                mac_init(&mac_state, &key, &nonce);
-                try testing.expectEqual(mac_update(&mac_state, msg.ptr, first), 0);
-                try testing.expectEqual(mac_update(&mac_state, msg.ptr + first, len - first), 0);
-                try testing.expectEqual(mac_final(&mac_state, &split_tag, tag_len), 0);
+                mac_init(mac_state, &key, &nonce);
+                try testing.expectEqual(mac_update(mac_state, msg.ptr, first), 0);
+                try testing.expectEqual(mac_update(mac_state, msg.ptr + first, len - first), 0);
+                try testing.expectEqual(mac_final(mac_state, &split_tag, tag_len), 0);
                 try testing.expectEqualSlices(u8, &tag, &split_tag);
             }
 

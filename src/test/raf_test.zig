@@ -82,6 +82,40 @@ fn rng() aegis.aegis_raf_rng {
     };
 }
 
+test "raf contexts accept unaligned storage for every variant" {
+    try testing.expectEqual(aegis.aegis_init(), 0);
+
+    inline for (.{ "aegis128l", "aegis128x2", "aegis128x4", "aegis256", "aegis256x2", "aegis256x4" }) |variant| {
+        const Context = @field(aegis, variant ++ "_raf_ctx");
+        var context_storage: [@sizeOf(Context) + 1]u8 align(64) = undefined;
+        const context: *Context = @ptrCast(&context_storage[1]);
+        try testing.expect(@alignOf(Context) == 1);
+
+        var file = MemoryFile.init(testing.allocator);
+        defer file.deinit();
+        var scratch_buf: [aegis.AEGIS256X4_RAF_SCRATCH_SIZE(1024)]u8 align(aegis.AEGIS_RAF_SCRATCH_ALIGN) = undefined;
+        const scratch = aegis.aegis_raf_scratch{ .buf = &scratch_buf, .len = scratch_buf.len };
+        const config = aegis.aegis_raf_config{
+            .chunk_size = 1024,
+            .flags = aegis.AEGIS_RAF_CREATE,
+            .scratch = &scratch,
+        };
+        const key: [32]u8 = @splat(0x42);
+        const message = "unaligned context";
+        var written: usize = undefined;
+        var read: usize = undefined;
+        var output: [message.len]u8 = undefined;
+
+        try testing.expectEqual(0, @field(aegis, variant ++ "_raf_create")(context, &file.io(), &rng(), &config, &key));
+        try testing.expectEqual(0, @field(aegis, variant ++ "_raf_write")(context, &written, message.ptr, message.len, 0));
+        try testing.expectEqual(message.len, written);
+        try testing.expectEqual(0, @field(aegis, variant ++ "_raf_read")(context, &output, &read, output.len, 0));
+        try testing.expectEqual(message.len, read);
+        try testing.expectEqualSlices(u8, message, &output);
+        @field(aegis, variant ++ "_raf_close")(context);
+    }
+}
+
 const FailingRng = struct {
     calls_until_fail: usize,
     call_count: usize = 0,
@@ -126,7 +160,7 @@ test "aegis128l_raf - create and basic write/read" {
         .scratch = &scratch,
     };
 
-    var ctx: aegis.aegis128l_raf_ctx align(32) = undefined;
+    var ctx: aegis.aegis128l_raf_ctx = undefined;
 
     var ret = aegis.aegis128l_raf_create(&ctx, &file.io(), &rng(), &cfg, &key);
     try testing.expectEqual(ret, 0);
@@ -178,7 +212,7 @@ test "aegis128l_raf - open existing file" {
         .scratch = &scratch,
     };
 
-    var ctx: aegis.aegis128l_raf_ctx align(32) = undefined;
+    var ctx: aegis.aegis128l_raf_ctx = undefined;
 
     var ret = aegis.aegis128l_raf_create(&ctx, &file.io(), &rng(), &cfg, &key);
     try testing.expectEqual(ret, 0);
@@ -235,7 +269,7 @@ test "aegis128l_raf - random access write" {
         .scratch = &scratch,
     };
 
-    var ctx: aegis.aegis128l_raf_ctx align(32) = undefined;
+    var ctx: aegis.aegis128l_raf_ctx = undefined;
 
     var ret = aegis.aegis128l_raf_create(&ctx, &file.io(), &rng(), &cfg, &key);
     try testing.expectEqual(ret, 0);
@@ -299,7 +333,7 @@ test "aegis128l_raf - truncate" {
         .scratch = &scratch,
     };
 
-    var ctx: aegis.aegis128l_raf_ctx align(32) = undefined;
+    var ctx: aegis.aegis128l_raf_ctx = undefined;
 
     var ret = aegis.aegis128l_raf_create(&ctx, &file.io(), &rng(), &cfg, &key);
     try testing.expectEqual(ret, 0);
@@ -351,7 +385,7 @@ test "aegis128l_raf - cross-chunk operations" {
         .scratch = &scratch,
     };
 
-    var ctx: aegis.aegis128l_raf_ctx align(32) = undefined;
+    var ctx: aegis.aegis128l_raf_ctx = undefined;
 
     var ret = aegis.aegis128l_raf_create(&ctx, &file.io(), &rng(), &cfg, &key);
     try testing.expectEqual(ret, 0);
@@ -398,7 +432,7 @@ test "aegis128l_raf - header tampering detection" {
         .scratch = &scratch,
     };
 
-    var ctx: aegis.aegis128l_raf_ctx align(32) = undefined;
+    var ctx: aegis.aegis128l_raf_ctx = undefined;
 
     var ret = aegis.aegis128l_raf_create(&ctx, &file.io(), &rng(), &cfg, &key);
     try testing.expectEqual(ret, 0);
@@ -444,7 +478,7 @@ test "aegis128l_raf - chunk tampering detection" {
         .scratch = &scratch,
     };
 
-    var ctx: aegis.aegis128l_raf_ctx align(32) = undefined;
+    var ctx: aegis.aegis128l_raf_ctx = undefined;
 
     var ret = aegis.aegis128l_raf_create(&ctx, &file.io(), &rng(), &cfg, &key);
     try testing.expectEqual(ret, 0);
@@ -501,7 +535,7 @@ test "aegis128l_raf - wrong key detection" {
         .scratch = &scratch,
     };
 
-    var ctx: aegis.aegis128l_raf_ctx align(32) = undefined;
+    var ctx: aegis.aegis128l_raf_ctx = undefined;
 
     var ret = aegis.aegis128l_raf_create(&ctx, &file.io(), &rng(), &cfg, &key1);
     try testing.expectEqual(ret, 0);
@@ -600,7 +634,7 @@ test "aegis_raf - algorithm mismatch detection" {
         .scratch = &scratch128,
     };
 
-    var ctx128: aegis.aegis128l_raf_ctx align(32) = undefined;
+    var ctx128: aegis.aegis128l_raf_ctx = undefined;
 
     var ret = aegis.aegis128l_raf_create(&ctx128, &file.io(), &rng(), &cfg, &key128);
     try testing.expectEqual(ret, 0);
@@ -652,7 +686,7 @@ test "aegis128l_raf - EOF behavior" {
         .scratch = &scratch,
     };
 
-    var ctx: aegis.aegis128l_raf_ctx align(32) = undefined;
+    var ctx: aegis.aegis128l_raf_ctx = undefined;
 
     var ret = aegis.aegis128l_raf_create(&ctx, &file.io(), &rng(), &cfg, &key);
     try testing.expectEqual(ret, 0);
@@ -698,7 +732,7 @@ test "aegis128l_raf - empty file" {
         .scratch = &scratch,
     };
 
-    var ctx: aegis.aegis128l_raf_ctx align(32) = undefined;
+    var ctx: aegis.aegis128l_raf_ctx = undefined;
 
     var ret = aegis.aegis128l_raf_create(&ctx, &file.io(), &rng(), &cfg, &key);
     try testing.expectEqual(ret, 0);
@@ -741,7 +775,7 @@ test "aegis128l_raf - create flags semantics" {
     var key: [aegis.aegis128l_KEYBYTES]u8 = undefined;
     random.bytes(&key);
 
-    var ctx: aegis.aegis128l_raf_ctx align(32) = undefined;
+    var ctx: aegis.aegis128l_raf_ctx = undefined;
 
     var scratch_buf: [aegis.AEGIS128L_RAF_SCRATCH_SIZE(4096)]u8 align(aegis.AEGIS_RAF_SCRATCH_ALIGN) =
         undefined;
@@ -808,7 +842,7 @@ test "aegis128l_raf - create without CREATE flag fails on empty file" {
         .scratch = &scratch,
     };
 
-    var ctx: aegis.aegis128l_raf_ctx align(32) = undefined;
+    var ctx: aegis.aegis128l_raf_ctx = undefined;
     const ret = aegis.aegis128l_raf_create(&ctx, &file.io(), &rng(), &cfg_no_create, &key);
     try testing.expect(ret != 0);
 }
@@ -838,7 +872,7 @@ test "aegis128l_raf - create refuses to replace a short existing file without TR
         .scratch = &scratch,
     };
 
-    var ctx: aegis.aegis128l_raf_ctx align(32) = undefined;
+    var ctx: aegis.aegis128l_raf_ctx = undefined;
     var ret = aegis.aegis128l_raf_create(&ctx, &file.io(), &rng(), &cfg_create_only, &key);
     try testing.expect(ret != 0);
     try testing.expectEqual(std.c._errno().*, @backingInt(std.c.E.EXIST));
@@ -876,7 +910,7 @@ test "aegis128l_raf - truncate grow within same chunk" {
         .scratch = &scratch,
     };
 
-    var ctx: aegis.aegis128l_raf_ctx align(32) = undefined;
+    var ctx: aegis.aegis128l_raf_ctx = undefined;
 
     var ret = aegis.aegis128l_raf_create(&ctx, &file.io(), &rng(), &cfg, &key);
     try testing.expectEqual(ret, 0);
@@ -936,7 +970,7 @@ test "aegis128l_raf - truncate grow across chunk boundaries" {
         .scratch = &scratch,
     };
 
-    var ctx: aegis.aegis128l_raf_ctx align(32) = undefined;
+    var ctx: aegis.aegis128l_raf_ctx = undefined;
 
     var ret = aegis.aegis128l_raf_create(&ctx, &file.io(), &rng(), &cfg, &key);
     try testing.expectEqual(ret, 0);
@@ -1026,7 +1060,7 @@ test "aegis128l_raf - shrink then grow within same chunk" {
         .scratch = &scratch,
     };
 
-    var ctx: aegis.aegis128l_raf_ctx align(32) = undefined;
+    var ctx: aegis.aegis128l_raf_ctx = undefined;
 
     var ret = aegis.aegis128l_raf_create(&ctx, &file.io(), &rng(), &cfg, &key);
     try testing.expectEqual(ret, 0);
@@ -1092,7 +1126,7 @@ test "aegis128l_raf - shrink then grow across chunk boundaries" {
         .scratch = &scratch,
     };
 
-    var ctx: aegis.aegis128l_raf_ctx align(32) = undefined;
+    var ctx: aegis.aegis128l_raf_ctx = undefined;
 
     var ret = aegis.aegis128l_raf_create(&ctx, &file.io(), &rng(), &cfg, &key);
     try testing.expectEqual(ret, 0);
@@ -1166,7 +1200,7 @@ test "aegis128l_raf - RNG failure during truncate grow" {
         .scratch = &scratch,
     };
 
-    var ctx: aegis.aegis128l_raf_ctx align(32) = undefined;
+    var ctx: aegis.aegis128l_raf_ctx = undefined;
 
     var failing_rng = FailingRng{ .calls_until_fail = 2 };
 
@@ -1227,7 +1261,7 @@ test "aegis128l_raf - null scratch rejected" {
         .scratch = null,
     };
 
-    var ctx: aegis.aegis128l_raf_ctx align(32) = undefined;
+    var ctx: aegis.aegis128l_raf_ctx = undefined;
 
     const ret = aegis.aegis128l_raf_create(&ctx, &file.io(), &rng(), &cfg_no_scratch, &key);
     try testing.expect(ret != 0);
@@ -1255,7 +1289,7 @@ test "aegis128l_raf - undersized scratch rejected" {
         .scratch = &small_scratch,
     };
 
-    var ctx: aegis.aegis128l_raf_ctx align(32) = undefined;
+    var ctx: aegis.aegis128l_raf_ctx = undefined;
 
     const ret = aegis.aegis128l_raf_create(&ctx, &file.io(), &rng(), &cfg, &key);
     try testing.expect(ret != 0);
@@ -1284,7 +1318,7 @@ test "aegis128l_raf - misaligned scratch rejected" {
         .scratch = &misaligned_scratch,
     };
 
-    var ctx: aegis.aegis128l_raf_ctx align(32) = undefined;
+    var ctx: aegis.aegis128l_raf_ctx = undefined;
 
     const ret = aegis.aegis128l_raf_create(&ctx, &file.io(), &rng(), &cfg, &key);
     try testing.expect(ret != 0);
@@ -1313,7 +1347,7 @@ test "aegis_raf_probe - basic functionality" {
         .scratch = &scratch,
     };
 
-    var ctx: aegis.aegis128l_raf_ctx align(32) = undefined;
+    var ctx: aegis.aegis128l_raf_ctx = undefined;
 
     var ret = aegis.aegis128l_raf_create(&ctx, &file.io(), &rng(), &cfg, &key);
     try testing.expectEqual(ret, 0);
@@ -1397,7 +1431,7 @@ test "aegis_raf_probe - invalid alg_id rejected" {
         .scratch = &scratch,
     };
 
-    var ctx: aegis.aegis128l_raf_ctx align(32) = undefined;
+    var ctx: aegis.aegis128l_raf_ctx = undefined;
     var ret = aegis.aegis128l_raf_create(&ctx, &file.io(), &rng(), &cfg, &key);
     try testing.expectEqual(ret, 0);
     aegis.aegis128l_raf_close(&ctx);
@@ -1432,7 +1466,7 @@ test "raf header byte-level layout" {
         .scratch = &scratch,
     };
 
-    var ctx: aegis.aegis128l_raf_ctx align(32) = undefined;
+    var ctx: aegis.aegis128l_raf_ctx = undefined;
     const ret = aegis.aegis128l_raf_create(&ctx, &file.io(), &rng(), &cfg, &key);
     try testing.expectEqual(ret, 0);
 
@@ -1476,7 +1510,7 @@ test "raf header byte-level layout" {
     const mac_byte = &file.data.items[48];
     mac_byte.* ^= 0x01;
 
-    var ctx2: aegis.aegis128l_raf_ctx align(32) = undefined;
+    var ctx2: aegis.aegis128l_raf_ctx = undefined;
     try testing.expect(aegis.aegis128l_raf_open(&ctx2, &file.io(), &rng(), &cfg, &key) != 0);
 
     // Restore and verify open succeeds again
@@ -1507,7 +1541,7 @@ test "raf header - tampered version rejected by probe and open" {
         .scratch = &scratch,
     };
 
-    var ctx: aegis.aegis128l_raf_ctx align(32) = undefined;
+    var ctx: aegis.aegis128l_raf_ctx = undefined;
     var ret = aegis.aegis128l_raf_create(&ctx, &file.io(), &rng(), &cfg, &key);
     try testing.expectEqual(ret, 0);
     aegis.aegis128l_raf_close(&ctx);
@@ -1550,7 +1584,7 @@ test "raf header - tampered header_size rejected by probe and open" {
         .scratch = &scratch,
     };
 
-    var ctx: aegis.aegis128l_raf_ctx align(32) = undefined;
+    var ctx: aegis.aegis128l_raf_ctx = undefined;
     var ret = aegis.aegis128l_raf_create(&ctx, &file.io(), &rng(), &cfg, &key);
     try testing.expectEqual(ret, 0);
     aegis.aegis128l_raf_close(&ctx);
@@ -1640,7 +1674,7 @@ test "aegis128l_raf - partial overwrite preserves trailing data" {
         .scratch = &scratch,
     };
 
-    var ctx: aegis.aegis128l_raf_ctx align(32) = undefined;
+    var ctx: aegis.aegis128l_raf_ctx = undefined;
 
     var ret = aegis.aegis128l_raf_create(&ctx, &file.io(), &rng(), &cfg, &key);
     try testing.expectEqual(ret, 0);
@@ -1698,7 +1732,7 @@ test "aegis128l_raf - partial overwrite preserves leading data" {
         .scratch = &scratch,
     };
 
-    var ctx: aegis.aegis128l_raf_ctx align(32) = undefined;
+    var ctx: aegis.aegis128l_raf_ctx = undefined;
 
     var ret = aegis.aegis128l_raf_create(&ctx, &file.io(), &rng(), &cfg, &key);
     try testing.expectEqual(ret, 0);
@@ -1754,7 +1788,7 @@ test "aegis128l_raf - multiple partial overwrites within chunk" {
         .scratch = &scratch,
     };
 
-    var ctx: aegis.aegis128l_raf_ctx align(32) = undefined;
+    var ctx: aegis.aegis128l_raf_ctx = undefined;
 
     var ret = aegis.aegis128l_raf_create(&ctx, &file.io(), &rng(), &cfg, &key);
     try testing.expectEqual(ret, 0);
@@ -1823,7 +1857,7 @@ test "aegis128l_raf - cross-chunk partial write preserves existing data" {
         .scratch = &scratch,
     };
 
-    var ctx: aegis.aegis128l_raf_ctx align(32) = undefined;
+    var ctx: aegis.aegis128l_raf_ctx = undefined;
 
     var ret = aegis.aegis128l_raf_create(&ctx, &file.io(), &rng(), &cfg, &key);
     try testing.expectEqual(ret, 0);
@@ -2094,7 +2128,7 @@ test "aegis_raf_merkle - null hash_commitment rejected by config_validate" {
         .merkle = &merkle_cfg,
     };
 
-    var ctx: aegis.aegis128l_raf_ctx align(32) = undefined;
+    var ctx: aegis.aegis128l_raf_ctx = undefined;
     try testing.expectEqual(aegis.aegis128l_raf_create(&ctx, &file.io(), &rng(), &cfg, &key), -1);
 }
 
@@ -2140,7 +2174,7 @@ test "aegis128l_raf_merkle - root changes on write" {
         .merkle = &merkle_cfg,
     };
 
-    var ctx: aegis.aegis128l_raf_ctx align(32) = undefined;
+    var ctx: aegis.aegis128l_raf_ctx = undefined;
 
     var ret = aegis.aegis128l_raf_create(&ctx, &file.io(), &rng(), &cfg, &key);
     try testing.expectEqual(ret, 0);
@@ -2231,7 +2265,7 @@ test "aegis128l_raf_merkle - rebuild matches incremental" {
         .merkle = &merkle_cfg1,
     };
 
-    var ctx: aegis.aegis128l_raf_ctx align(32) = undefined;
+    var ctx: aegis.aegis128l_raf_ctx = undefined;
 
     var ret = aegis.aegis128l_raf_create(&ctx, &file.io(), &rng(), &cfg1, &key);
     try testing.expectEqual(ret, 0);
@@ -2310,7 +2344,7 @@ test "aegis128l_raf_merkle - truncate shrink clears leaves" {
         .merkle = &merkle_cfg,
     };
 
-    var ctx: aegis.aegis128l_raf_ctx align(32) = undefined;
+    var ctx: aegis.aegis128l_raf_ctx = undefined;
 
     var ret = aegis.aegis128l_raf_create(&ctx, &file.io(), &rng(), &cfg, &key);
     try testing.expectEqual(ret, 0);
@@ -2377,7 +2411,7 @@ test "aegis128l_raf_merkle - truncate within same chunk count rehashes" {
         .merkle = &merkle_cfg,
     };
 
-    var ctx: aegis.aegis128l_raf_ctx align(32) = undefined;
+    var ctx: aegis.aegis128l_raf_ctx = undefined;
 
     var ret = aegis.aegis128l_raf_create(&ctx, &file.io(), &rng(), &cfg, &key);
     try testing.expectEqual(ret, 0);
@@ -2447,7 +2481,7 @@ test "aegis128l_raf_merkle - max_chunks exceeded fails" {
         .merkle = &merkle_cfg,
     };
 
-    var ctx: aegis.aegis128l_raf_ctx align(32) = undefined;
+    var ctx: aegis.aegis128l_raf_ctx = undefined;
 
     var ret = aegis.aegis128l_raf_create(&ctx, &file.io(), &rng(), &cfg, &key);
     try testing.expectEqual(ret, 0);
@@ -2505,7 +2539,7 @@ test "aegis128l_raf_merkle - partial overwrite updates root" {
         .merkle = &merkle_cfg,
     };
 
-    var ctx: aegis.aegis128l_raf_ctx align(32) = undefined;
+    var ctx: aegis.aegis128l_raf_ctx = undefined;
 
     var ret = aegis.aegis128l_raf_create(&ctx, &file.io(), &rng(), &cfg, &key);
     try testing.expectEqual(ret, 0);
@@ -2570,7 +2604,7 @@ test "aegis128l_raf_merkle - verify succeeds after rebuild" {
         .merkle = &merkle_cfg,
     };
 
-    var ctx: aegis.aegis128l_raf_ctx align(32) = undefined;
+    var ctx: aegis.aegis128l_raf_ctx = undefined;
 
     var ret = aegis.aegis128l_raf_create(&ctx, &file.io(), &rng(), &cfg, &key);
     try testing.expectEqual(ret, 0);
@@ -2607,7 +2641,7 @@ test "aegis128l_raf_merkle - verify succeeds after rebuild" {
         .merkle = &merkle_cfg2,
     };
 
-    var ctx2: aegis.aegis128l_raf_ctx align(32) = undefined;
+    var ctx2: aegis.aegis128l_raf_ctx = undefined;
     ret = aegis.aegis128l_raf_open(&ctx2, &file.io(), &rng(), &cfg2, &key);
     try testing.expectEqual(ret, 0);
 
@@ -2660,7 +2694,7 @@ test "aegis128l_raf_merkle - verify detects corruption" {
         .merkle = &merkle_cfg,
     };
 
-    var ctx: aegis.aegis128l_raf_ctx align(32) = undefined;
+    var ctx: aegis.aegis128l_raf_ctx = undefined;
 
     var ret = aegis.aegis128l_raf_create(&ctx, &file.io(), &rng(), &cfg, &key);
     try testing.expectEqual(ret, 0);
@@ -2675,7 +2709,7 @@ test "aegis128l_raf_merkle - verify detects corruption" {
 
     aegis.aegis128l_raf_close(&ctx);
 
-    var ctx2: aegis.aegis128l_raf_ctx align(32) = undefined;
+    var ctx2: aegis.aegis128l_raf_ctx = undefined;
 
     const cfg2 = aegis.aegis_raf_config{
         .chunk_size = aegis.AEGIS_RAF_CHUNK_MIN,
@@ -2774,7 +2808,7 @@ test "aegis128l_raf_merkle - single chunk tree" {
         .merkle = &merkle_cfg,
     };
 
-    var ctx: aegis.aegis128l_raf_ctx align(32) = undefined;
+    var ctx: aegis.aegis128l_raf_ctx = undefined;
 
     var ret = aegis.aegis128l_raf_create(&ctx, &file.io(), &rng(), &cfg, &key);
     try testing.expectEqual(ret, 0);
@@ -2837,7 +2871,7 @@ test "aegis128l_raf_merkle - empty file operations" {
         .merkle = &merkle_cfg,
     };
 
-    var ctx: aegis.aegis128l_raf_ctx align(32) = undefined;
+    var ctx: aegis.aegis128l_raf_ctx = undefined;
 
     var ret = aegis.aegis128l_raf_create(&ctx, &file.io(), &rng(), &cfg, &key);
     try testing.expectEqual(ret, 0);
@@ -2904,7 +2938,7 @@ test "aegis128l_raf_merkle - write spanning multiple chunks" {
         .merkle = &merkle_cfg,
     };
 
-    var ctx: aegis.aegis128l_raf_ctx align(32) = undefined;
+    var ctx: aegis.aegis128l_raf_ctx = undefined;
 
     var ret = aegis.aegis128l_raf_create(&ctx, &file.io(), &rng(), &cfg, &key);
     try testing.expectEqual(ret, 0);
@@ -3001,7 +3035,7 @@ test "aegis128l_raf_merkle - write at chunk boundary" {
         .merkle = &merkle_cfg,
     };
 
-    var ctx: aegis.aegis128l_raf_ctx align(32) = undefined;
+    var ctx: aegis.aegis128l_raf_ctx = undefined;
 
     var ret = aegis.aegis128l_raf_create(&ctx, &file.io(), &rng(), &cfg, &key);
     try testing.expectEqual(ret, 0);
@@ -3078,7 +3112,7 @@ test "aegis128l_raf_merkle - verify detects corruption in middle chunk" {
         .merkle = &merkle_cfg,
     };
 
-    var ctx: aegis.aegis128l_raf_ctx align(32) = undefined;
+    var ctx: aegis.aegis128l_raf_ctx = undefined;
 
     var ret = aegis.aegis128l_raf_create(&ctx, &file.io(), &rng(), &cfg, &key);
     try testing.expectEqual(ret, 0);
@@ -3146,7 +3180,7 @@ test "aegis128l_raf_merkle - verify detects corruption in last chunk" {
         .merkle = &merkle_cfg,
     };
 
-    var ctx: aegis.aegis128l_raf_ctx align(32) = undefined;
+    var ctx: aegis.aegis128l_raf_ctx = undefined;
 
     var ret = aegis.aegis128l_raf_create(&ctx, &file.io(), &rng(), &cfg, &key);
     try testing.expectEqual(ret, 0);
@@ -3216,7 +3250,7 @@ test "aegis128l_raf_merkle - verify detects parent and root tampering" {
         .merkle = &merkle_cfg,
     };
 
-    var ctx: aegis.aegis128l_raf_ctx align(32) = undefined;
+    var ctx: aegis.aegis128l_raf_ctx = undefined;
 
     var ret = aegis.aegis128l_raf_create(&ctx, &file.io(), &rng(), &cfg, &key);
     try testing.expectEqual(ret, 0);
@@ -3295,7 +3329,7 @@ test "aegis128l_raf_merkle - odd tree supports max hash_len" {
         .merkle = &merkle_cfg,
     };
 
-    var ctx: aegis.aegis128l_raf_ctx align(32) = undefined;
+    var ctx: aegis.aegis128l_raf_ctx = undefined;
 
     var ret = aegis.aegis128l_raf_create(&ctx, &file.io(), &rng(), &cfg, &key);
     try testing.expectEqual(ret, 0);
@@ -3354,7 +3388,7 @@ test "aegis128l_raf_merkle - hash_len above max is rejected" {
         .merkle = &merkle_cfg,
     };
 
-    var ctx: aegis.aegis128l_raf_ctx align(32) = undefined;
+    var ctx: aegis.aegis128l_raf_ctx = undefined;
     const ret = aegis.aegis128l_raf_create(&ctx, &file.io(), &rng(), &cfg, &key);
     try testing.expect(ret != 0);
 }
@@ -3398,7 +3432,7 @@ test "aegis128l_raf_merkle - hash_len below min is rejected" {
         .merkle = &merkle_cfg,
     };
 
-    var ctx: aegis.aegis128l_raf_ctx align(32) = undefined;
+    var ctx: aegis.aegis128l_raf_ctx = undefined;
     const ret = aegis.aegis128l_raf_create(&ctx, &file.io(), &rng(), &cfg, &key);
     try testing.expect(ret != 0);
 }
@@ -3442,7 +3476,7 @@ test "aegis128l_raf_merkle - truncate to zero clears all leaves" {
         .merkle = &merkle_cfg,
     };
 
-    var ctx: aegis.aegis128l_raf_ctx align(32) = undefined;
+    var ctx: aegis.aegis128l_raf_ctx = undefined;
 
     var ret = aegis.aegis128l_raf_create(&ctx, &file.io(), &rng(), &cfg, &key);
     try testing.expectEqual(ret, 0);
@@ -3512,7 +3546,7 @@ test "aegis128l_raf_merkle - truncate preserves earlier chunks" {
         .merkle = &merkle_cfg,
     };
 
-    var ctx: aegis.aegis128l_raf_ctx align(32) = undefined;
+    var ctx: aegis.aegis128l_raf_ctx = undefined;
 
     var ret = aegis.aegis128l_raf_create(&ctx, &file.io(), &rng(), &cfg, &key);
     try testing.expectEqual(ret, 0);
@@ -3583,7 +3617,7 @@ test "aegis128l_raf_merkle - truncate grow rebuild matches incremental" {
         .merkle = &merkle_cfg1,
     };
 
-    var ctx: aegis.aegis128l_raf_ctx align(32) = undefined;
+    var ctx: aegis.aegis128l_raf_ctx = undefined;
 
     var ret = aegis.aegis128l_raf_create(&ctx, &file.io(), &rng(), &cfg1, &key);
     try testing.expectEqual(ret, 0);
@@ -3673,7 +3707,7 @@ test "aegis128l_raf_merkle - overwrite preserves tree consistency" {
         .merkle = &merkle_cfg,
     };
 
-    var ctx: aegis.aegis128l_raf_ctx align(32) = undefined;
+    var ctx: aegis.aegis128l_raf_ctx = undefined;
 
     var ret = aegis.aegis128l_raf_create(&ctx, &file.io(), &rng(), &cfg, &key);
     try testing.expectEqual(ret, 0);
@@ -3744,7 +3778,7 @@ test "aegis128l_raf_merkle - non power of 2 chunk count" {
         .merkle = &merkle_cfg,
     };
 
-    var ctx: aegis.aegis128l_raf_ctx align(32) = undefined;
+    var ctx: aegis.aegis128l_raf_ctx = undefined;
 
     var ret = aegis.aegis128l_raf_create(&ctx, &file.io(), &rng(), &cfg, &key);
     try testing.expectEqual(ret, 0);
@@ -3838,7 +3872,7 @@ test "aegis128l_raf_merkle - 3 max chunks odd tree" {
         .merkle = &merkle_cfg,
     };
 
-    var ctx: aegis.aegis128l_raf_ctx align(32) = undefined;
+    var ctx: aegis.aegis128l_raf_ctx = undefined;
 
     var ret = aegis.aegis128l_raf_create(&ctx, &file.io(), &rng(), &cfg, &key);
     try testing.expectEqual(ret, 0);
@@ -3905,7 +3939,7 @@ test "aegis128l_raf_merkle - write extending file" {
         .merkle = &merkle_cfg,
     };
 
-    var ctx: aegis.aegis128l_raf_ctx align(32) = undefined;
+    var ctx: aegis.aegis128l_raf_ctx = undefined;
 
     var ret = aegis.aegis128l_raf_create(&ctx, &file.io(), &rng(), &cfg, &key);
     try testing.expectEqual(ret, 0);
@@ -3993,7 +4027,7 @@ test "aegis128l_raf_merkle - different data different roots" {
         .merkle = &merkle_cfg,
     };
 
-    var ctx: aegis.aegis128l_raf_ctx align(32) = undefined;
+    var ctx: aegis.aegis128l_raf_ctx = undefined;
 
     var ret = aegis.aegis128l_raf_create(&ctx, &file.io(), &rng(), &cfg, &key);
     try testing.expectEqual(ret, 0);
@@ -4060,7 +4094,7 @@ test "aegis128l_raf_merkle - single byte change changes root" {
         .merkle = &merkle_cfg,
     };
 
-    var ctx: aegis.aegis128l_raf_ctx align(32) = undefined;
+    var ctx: aegis.aegis128l_raf_ctx = undefined;
 
     var ret = aegis.aegis128l_raf_create(&ctx, &file.io(), &rng(), &cfg, &key);
     try testing.expectEqual(ret, 0);
@@ -4125,7 +4159,7 @@ test "aegis256_raf_merkle - verify with different AEGIS variant" {
         .merkle = &merkle_cfg,
     };
 
-    var ctx: aegis.aegis256_raf_ctx align(32) = undefined;
+    var ctx: aegis.aegis256_raf_ctx = undefined;
 
     var ret = aegis.aegis256_raf_create(&ctx, &file.io(), &rng(), &cfg, &key);
     try testing.expectEqual(ret, 0);
@@ -4213,7 +4247,7 @@ test "aegis128l_raf_merkle - root commitment consistency" {
         .merkle = &merkle_cfg,
     };
 
-    var ctx: aegis.aegis128l_raf_ctx align(32) = undefined;
+    var ctx: aegis.aegis128l_raf_ctx = undefined;
 
     var ret = aegis.aegis128l_raf_create(&ctx, &file.io(), &rng(), &cfg, &key);
     try testing.expectEqual(ret, 0);
@@ -4279,7 +4313,7 @@ test "aegis128l_raf_merkle - exact chunk size writes" {
         .merkle = &merkle_cfg,
     };
 
-    var ctx: aegis.aegis128l_raf_ctx align(32) = undefined;
+    var ctx: aegis.aegis128l_raf_ctx = undefined;
 
     var ret = aegis.aegis128l_raf_create(&ctx, &file.io(), &rng(), &cfg, &key);
     try testing.expectEqual(ret, 0);
@@ -4327,7 +4361,7 @@ const FuzzOp = enum(u8) {
 const FuzzState = struct {
     shadow: std.ArrayListUnmanaged(u8),
     file: *MemoryFile,
-    ctx: aegis.aegis128l_raf_ctx align(32),
+    ctx: aegis.aegis128l_raf_ctx,
     merkle_buf: [4096]u8,
     merkle_cfg: aegis.aegis_raf_merkle_config,
     scratch_buf: [aegis.AEGIS128L_RAF_SCRATCH_SIZE(1024)]u8 align(aegis.AEGIS_RAF_SCRATCH_ALIGN),
@@ -4965,7 +4999,7 @@ test "fuzz - different hash lengths" {
             .merkle = &merkle_cfg,
         };
 
-        var ctx: aegis.aegis128l_raf_ctx align(32) = undefined;
+        var ctx: aegis.aegis128l_raf_ctx = undefined;
         var ret = aegis.aegis128l_raf_create(&ctx, &file.io(), &rng(), &cfg, &key);
         try testing.expectEqual(ret, 0);
 
@@ -5049,7 +5083,7 @@ test "fuzz - RAF without merkle random operations" {
         .merkle = null,
     };
 
-    var ctx: aegis.aegis128l_raf_ctx align(32) = undefined;
+    var ctx: aegis.aegis128l_raf_ctx = undefined;
     var ret = aegis.aegis128l_raf_create(&ctx, &file.io(), &rng(), &cfg, &key);
     try testing.expectEqual(ret, 0);
 
@@ -5210,7 +5244,7 @@ test "fuzz - aegis256 random operations with merkle" {
         .merkle = &merkle_cfg,
     };
 
-    var ctx: aegis.aegis256_raf_ctx align(32) = undefined;
+    var ctx: aegis.aegis256_raf_ctx = undefined;
     var ret = aegis.aegis256_raf_create(&ctx, &file.io(), &rng(), &cfg, &key);
     try testing.expectEqual(ret, 0);
 
@@ -5321,7 +5355,7 @@ test "fuzz - write then corrupt then detect" {
             .merkle = &merkle_cfg,
         };
 
-        var ctx: aegis.aegis128l_raf_ctx align(32) = undefined;
+        var ctx: aegis.aegis128l_raf_ctx = undefined;
         var ret = aegis.aegis128l_raf_create(&ctx, &file.io(), &rng(), &cfg, &key);
         try testing.expectEqual(ret, 0);
 
@@ -5391,7 +5425,7 @@ test "aegis128l_raf_merkle_commitment - returns 0 with merkle enabled" {
         .merkle = &merkle_cfg,
     };
 
-    var ctx: aegis.aegis128l_raf_ctx align(32) = undefined;
+    var ctx: aegis.aegis128l_raf_ctx = undefined;
     var ret = aegis.aegis128l_raf_create(&ctx, &file.io(), &rng(), &cfg, &key);
     try testing.expectEqual(ret, 0);
 
@@ -5427,7 +5461,7 @@ test "aegis128l_raf_merkle_commitment - returns ENOTSUP without merkle" {
         .merkle = null,
     };
 
-    var ctx: aegis.aegis128l_raf_ctx align(32) = undefined;
+    var ctx: aegis.aegis128l_raf_ctx = undefined;
     var ret = aegis.aegis128l_raf_create(&ctx, &file.io(), &rng(), &cfg, &key);
     try testing.expectEqual(ret, 0);
 
@@ -5500,8 +5534,8 @@ test "aegis128l_raf_merkle_commitment - bound to file identity" {
         .merkle = &merkle_cfg2,
     };
 
-    var ctx1: aegis.aegis128l_raf_ctx align(32) = undefined;
-    var ctx2: aegis.aegis128l_raf_ctx align(32) = undefined;
+    var ctx1: aegis.aegis128l_raf_ctx = undefined;
+    var ctx2: aegis.aegis128l_raf_ctx = undefined;
 
     var ret = aegis.aegis128l_raf_create(&ctx1, &file1.io(), &rng(), &cfg1, &key);
     try testing.expectEqual(ret, 0);
@@ -5550,7 +5584,7 @@ test "aegis128l_raf - open reads header exactly once" {
         .scratch = &scratch,
     };
 
-    var ctx: aegis.aegis128l_raf_ctx align(32) = undefined;
+    var ctx: aegis.aegis128l_raf_ctx = undefined;
 
     var ret = aegis.aegis128l_raf_create(&ctx, &file.io(), &rng(), &cfg, &key);
     try testing.expectEqual(ret, 0);
@@ -5657,7 +5691,7 @@ test "aegis128l_raf_merkle - verify with max_chunks 1 and one chunk" {
         .merkle = &merkle_cfg,
     };
 
-    var ctx: aegis.aegis128l_raf_ctx align(32) = undefined;
+    var ctx: aegis.aegis128l_raf_ctx = undefined;
 
     var ret = aegis.aegis128l_raf_create(&ctx, &file.io(), &rng(), &cfg, &key);
     try testing.expectEqual(ret, 0);
@@ -5739,7 +5773,7 @@ test "aegis128l_raf_merkle - verify with max_chunks 1 and empty file" {
         .merkle = &merkle_cfg,
     };
 
-    var ctx: aegis.aegis128l_raf_ctx align(32) = undefined;
+    var ctx: aegis.aegis128l_raf_ctx = undefined;
 
     var ret = aegis.aegis128l_raf_create(&ctx, &file.io(), &rng(), &cfg, &key);
     try testing.expectEqual(ret, 0);
@@ -5864,7 +5898,7 @@ test "aegis128l_raf - derive_master_key integration: same context opens" {
         .scratch = &scratch,
     };
 
-    var ctx: aegis.aegis128l_raf_ctx align(32) = undefined;
+    var ctx: aegis.aegis128l_raf_ctx = undefined;
     try testing.expectEqual(aegis.aegis128l_raf_create(&ctx, &file.io(), &rng(), &create_cfg, &derived), 0);
 
     const test_data = "context-bound data";
@@ -5915,7 +5949,7 @@ test "aegis128l_raf - derive_master_key integration: different context fails ope
         .scratch = &scratch,
     };
 
-    var ctx: aegis.aegis128l_raf_ctx align(32) = undefined;
+    var ctx: aegis.aegis128l_raf_ctx = undefined;
     try testing.expectEqual(aegis.aegis128l_raf_create(&ctx, &file.io(), &rng(), &create_cfg, &derived_a), 0);
 
     const test_data = "context-bound data";
@@ -5959,7 +5993,7 @@ test "aegis128l_raf - derive_master_key integration: raw key fails open" {
         .scratch = &scratch,
     };
 
-    var ctx: aegis.aegis128l_raf_ctx align(32) = undefined;
+    var ctx: aegis.aegis128l_raf_ctx = undefined;
     try testing.expectEqual(aegis.aegis128l_raf_create(&ctx, &file.io(), &rng(), &create_cfg, &derived), 0);
     aegis.aegis128l_raf_close(&ctx);
 
@@ -5996,7 +6030,7 @@ test "aegis128l_raf - derive_master_key integration: probe unchanged" {
         .scratch = &scratch,
     };
 
-    var ctx: aegis.aegis128l_raf_ctx align(32) = undefined;
+    var ctx: aegis.aegis128l_raf_ctx = undefined;
     try testing.expectEqual(aegis.aegis128l_raf_create(&ctx, &file.io(), &rng(), &create_cfg, &derived), 0);
     aegis.aegis128l_raf_close(&ctx);
 
@@ -6370,7 +6404,7 @@ test "aegis128l_raf - failed shrink header requires reopen and preserves chunks"
         .scratch = &scratch,
     };
 
-    var ctx: aegis.aegis128l_raf_ctx align(32) = undefined;
+    var ctx: aegis.aegis128l_raf_ctx = undefined;
     var ret = aegis.aegis128l_raf_create(&ctx, &file.io(), &rng(), &cfg, &key);
     try testing.expectEqual(ret, 0);
 
@@ -6459,7 +6493,7 @@ test "aegis128l_raf_merkle - failed grow requires reopen before a smaller write"
         .merkle = &merkle_cfg,
     };
 
-    var ctx: aegis.aegis128l_raf_ctx align(32) = undefined;
+    var ctx: aegis.aegis128l_raf_ctx = undefined;
     var ret = aegis.aegis128l_raf_create(&ctx, &file.io(), &rng(), &cfg, &key);
     try testing.expectEqual(ret, 0);
     aegis.aegis128l_raf_close(&ctx);
@@ -6536,7 +6570,7 @@ test "aegis128l_raf_merkle - shrink read fails before any mutation" {
         .merkle = &merkle_cfg,
     };
 
-    var ctx: aegis.aegis128l_raf_ctx align(32) = undefined;
+    var ctx: aegis.aegis128l_raf_ctx = undefined;
     var ret = aegis.aegis128l_raf_create(&ctx, &file.io(), &rng(), &cfg, &key);
     try testing.expectEqual(ret, 0);
 

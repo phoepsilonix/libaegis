@@ -29,12 +29,12 @@ extern "C" {
 
 /* An AEGIS state, for incremental updates */
 typedef struct aegis128x2_state {
-    CRYPTO_ALIGN(64) uint8_t opaque[448];
+    uint8_t opaque[448];
 } aegis128x2_state;
 
 /* An AEGIS state, only for MAC updates */
 typedef struct aegis128x2_mac_state {
-    CRYPTO_ALIGN(64) uint8_t opaque[704];
+    uint8_t opaque[704];
 } aegis128x2_mac_state;
 
 /* The length of an AEGIS key, in bytes */

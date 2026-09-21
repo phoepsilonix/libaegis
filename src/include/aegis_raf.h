@@ -343,9 +343,11 @@ int aegis_raf_derive_master_key(uint8_t *out, size_t out_len, const uint8_t *mas
  * fails partway through the header can leave the file unreadable.
  */
 
-/* Opaque context for AEGIS-128L RAF operations. */
+/*
+ * Opaque context for AEGIS-128L RAF operations.
+ */
 typedef struct aegis128l_raf_ctx {
-    CRYPTO_ALIGN(32) uint8_t opaque[512];
+    uint8_t opaque[512];
 } aegis128l_raf_ctx;
 
 /*
@@ -448,7 +450,7 @@ int aegis128l_raf_merkle_commitment(const aegis128l_raf_ctx *ctx, uint8_t *out, 
 
 /* Opaque context for AEGIS-128X2 RAF operations. See aegis128l_raf_* for API docs. */
 typedef struct aegis128x2_raf_ctx {
-    CRYPTO_ALIGN(32) uint8_t opaque[512];
+    uint8_t opaque[512];
 } aegis128x2_raf_ctx;
 
 int aegis128x2_raf_create(aegis128x2_raf_ctx *ctx, const aegis_raf_io *io, const aegis_raf_rng *rng,
@@ -481,7 +483,7 @@ int aegis128x2_raf_merkle_commitment(const aegis128x2_raf_ctx *ctx, uint8_t *out
 
 /* Opaque context for AEGIS-128X4 RAF operations. See aegis128l_raf_* for API docs. */
 typedef struct aegis128x4_raf_ctx {
-    CRYPTO_ALIGN(64) uint8_t opaque[512];
+    uint8_t opaque[512];
 } aegis128x4_raf_ctx;
 
 int aegis128x4_raf_create(aegis128x4_raf_ctx *ctx, const aegis_raf_io *io, const aegis_raf_rng *rng,
@@ -514,7 +516,7 @@ int aegis128x4_raf_merkle_commitment(const aegis128x4_raf_ctx *ctx, uint8_t *out
 
 /* Opaque context for AEGIS-256 RAF operations. Master key is 32 bytes. */
 typedef struct aegis256_raf_ctx {
-    CRYPTO_ALIGN(16) uint8_t opaque[512];
+    uint8_t opaque[512];
 } aegis256_raf_ctx;
 
 int aegis256_raf_create(aegis256_raf_ctx *ctx, const aegis_raf_io *io, const aegis_raf_rng *rng,
@@ -547,7 +549,7 @@ int aegis256_raf_merkle_commitment(const aegis256_raf_ctx *ctx, uint8_t *out, si
 
 /* Opaque context for AEGIS-256X2 RAF operations. Master key is 32 bytes. */
 typedef struct aegis256x2_raf_ctx {
-    CRYPTO_ALIGN(32) uint8_t opaque[512];
+    uint8_t opaque[512];
 } aegis256x2_raf_ctx;
 
 int aegis256x2_raf_create(aegis256x2_raf_ctx *ctx, const aegis_raf_io *io, const aegis_raf_rng *rng,
@@ -580,7 +582,7 @@ int aegis256x2_raf_merkle_commitment(const aegis256x2_raf_ctx *ctx, uint8_t *out
 
 /* Opaque context for AEGIS-256X4 RAF operations. Master key is 32 bytes. */
 typedef struct aegis256x4_raf_ctx {
-    CRYPTO_ALIGN(64) uint8_t opaque[512];
+    uint8_t opaque[512];
 } aegis256x4_raf_ctx;
 
 int aegis256x4_raf_create(aegis256x4_raf_ctx *ctx, const aegis_raf_io *io, const aegis_raf_rng *rng,
