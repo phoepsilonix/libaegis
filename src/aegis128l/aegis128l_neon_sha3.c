@@ -68,9 +68,10 @@ static AEGIS_ALWAYS_INLINE size_t
 aegis128l_bulk(uint8_t *dst, const uint8_t *src, size_t len, aes_block_t *state,
                const enum aegis_bulk_operation operation)
 {
-    const size_t   full = len - len % 32;
-    const unsigned split = operation == AEGIS_BULK_ABSORB    ? 0xff :
-                           operation == AEGIS_BULK_DECRYPT   ? 0x77 : 0;
+    const size_t   full         = len - len % 32;
+    const unsigned split        = operation == AEGIS_BULK_ABSORB    ? 0xff
+                                  : operation == AEGIS_BULK_DECRYPT ? 0x77
+                                                                    : 0;
     const int      complemented = operation != AEGIS_BULK_ABSORB;
     aes_block_t    x[8], y[8], r[8];
     size_t         i, j;
@@ -85,7 +86,8 @@ aegis128l_bulk(uint8_t *dst, const uint8_t *src, size_t len, aes_block_t *state,
     CRYPTO_ALIGN_LOOP(32)
     for (i = 0; i < full; i += 32) {
         aes_block_t m0 = operation == AEGIS_BULK_STREAM ? vmovq_n_u8(0) : AES_BLOCK_LOAD(src + i);
-        aes_block_t m1 = operation == AEGIS_BULK_STREAM ? vmovq_n_u8(0) : AES_BLOCK_LOAD(src + i + 16);
+        aes_block_t m1 =
+            operation == AEGIS_BULK_STREAM ? vmovq_n_u8(0) : AES_BLOCK_LOAD(src + i + 16);
 
         for (j = 0; j < 8; j++) {
             const size_t prev = (j + 7) % 8;
@@ -128,8 +130,9 @@ aegis128l_bulk(uint8_t *dst, const uint8_t *src, size_t len, aes_block_t *state,
         x[4] = AES_BLOCK_XOR(x[4], m1);
     }
     for (j = 0; j < 8; j++) {
-        state[j] = (split & (1U << j)) ? AES_BLOCK_XOR(x[j], y[j]) :
-                   (complemented && (j == 3 || j == 7)) ? vmvnq_u8(x[j]) : x[j];
+        state[j] = (split & (1U << j))                    ? AES_BLOCK_XOR(x[j], y[j])
+                   : (complemented && (j == 3 || j == 7)) ? vmvnq_u8(x[j])
+                                                          : x[j];
     }
     return full;
 }

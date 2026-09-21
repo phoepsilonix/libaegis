@@ -309,14 +309,16 @@ _runtime_intel_cpu_features(CPUFeatures *const cpu_features)
             if (ext_info[0] >= 0x8000001a) {
                 _cpuid(ext_info, 0x8000001a);
                 /* A clear bit means the CPU runs 512-bit AVX-512 as two 256-bit passes.
-                 * Only AEGIS-256X4 gets faster with the narrower backend there; AEGIS-128X4 measured slower on Zen 4 and stays on the 512-bit one. */
+                 * Only AEGIS-256X4 gets faster with the narrower backend there; AEGIS-128X4
+                 * measured slower on Zen 4 and stays on the 512-bit one. */
                 if ((ext_info[0] & 0x00000008) == 0x0) {
                     cpu_features->has_narrow_avx512 = 1;
                 }
             }
         }
-        /* Intel has no equivalent bit to check, but every Intel chip that supports AVX-512 today runs it at full width anyway, so there's nothing to detect yet.
-         * Worth revisiting if that ever changes. */
+        /* Intel has no equivalent bit to check, but every Intel chip that supports AVX-512 today
+         * runs it at full width anyway, so there's nothing to detect yet. Worth revisiting if that
+         * ever changes. */
     }
     /* LCOV_EXCL_STOP */
 #endif

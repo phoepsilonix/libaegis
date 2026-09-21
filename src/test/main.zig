@@ -665,6 +665,23 @@ test "stream_xor - all variants" {
     }
 }
 
+test "stream null nonce matches zero nonce for all variants" {
+    try testing.expectEqual(aegis.aegis_init(), 0);
+
+    const variants = [_][]const u8{ "aegis128l", "aegis128x2", "aegis128x4", "aegis256", "aegis256x2", "aegis256x4" };
+    inline for (variants) |v| {
+        const stream = @field(aegis, v ++ "_stream");
+        const key: [@field(aegis, v ++ "_KEYBYTES")]u8 = @splat(0);
+        const zero_nonce: [@field(aegis, v ++ "_NPUBBYTES")]u8 = @splat(0);
+        var explicit: [32]u8 = undefined;
+        var implicit: [32]u8 = undefined;
+
+        stream(&explicit, explicit.len, &zero_nonce, &key);
+        stream(&implicit, implicit.len, null, &key);
+        try testing.expectEqualSlices(u8, &explicit, &implicit);
+    }
+}
+
 test "bulk paths match short updates for all variants" {
     try testing.expectEqual(aegis.aegis_init(), 0);
 
@@ -699,7 +716,6 @@ test "bulk paths match short updates for all variants" {
         const unauth_dec = @field(aegis, v ++ "_decrypt_unauthenticated");
         const key: [@field(aegis, v ++ "_KEYBYTES")]u8 = @splat(0x42);
         const nonce: [@field(aegis, v ++ "_NPUBBYTES")]u8 = @splat(0x24);
-        const zero_nonce: [nonce.len]u8 = @splat(0);
         var state: @field(aegis, v ++ "_state") = undefined;
         var mac_state: @field(aegis, v ++ "_mac_state") = undefined;
 
@@ -802,9 +818,6 @@ test "bulk paths match short updates for all variants" {
             try testing.expectEqualSlices(u8, c, out);
             stream_xor(out.ptr, out.ptr, len, &nonce, &key);
             try testing.expectEqualSlices(u8, msg, out);
-            stream(c.ptr, len, &zero_nonce, &key);
-            stream(out.ptr, len, null, &key);
-            try testing.expectEqualSlices(u8, c, out);
 
             try testing.expectEqual(encrypt(c.ptr, &tag, tag.len, msg.ptr, len, null, 0, &nonce, &key), 0);
             @memcpy(out, msg);

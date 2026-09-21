@@ -1,8 +1,8 @@
 #ifndef AEGIS_ENCRYPT_BULK
-#    define AEGIS_ENCRYPT_BULK(dst, src, len, state) 0
-#    define AEGIS_DECRYPT_BULK(dst, src, len, state) 0
-#    define AEGIS_ABSORB_BULK(dst, src, len, state) 0
-#    define AEGIS_STREAM_BULK(dst, src, len, state) 0
+#    define AEGIS_ENCRYPT_BULK(dst, src, len, state)    0
+#    define AEGIS_DECRYPT_BULK(dst, src, len, state)    0
+#    define AEGIS_ABSORB_BULK(dst, src, len, state)     0
+#    define AEGIS_STREAM_BULK(dst, src, len, state)     0
 #    define AEGIS_STREAM_XOR_BULK(dst, src, len, state) 0
 #endif
 
@@ -274,13 +274,15 @@ static void
 stream(uint8_t *out, size_t len, const uint8_t *npub, const uint8_t *k)
 {
     aegis_blocks                    state;
-    CRYPTO_ALIGN(ALIGNMENT) uint8_t src[aegis256_NPUBBYTES];
+    CRYPTO_ALIGN(ALIGNMENT) uint8_t src[RATE];
     CRYPTO_ALIGN(ALIGNMENT) uint8_t dst[RATE];
+    CRYPTO_ALIGN(ALIGNMENT) uint8_t zero_nonce[aegis256_NPUBBYTES];
     size_t                          i;
 
     memset(src, 0, sizeof src);
     if (npub == NULL) {
-        npub = src;
+        memset(zero_nonce, 0, sizeof zero_nonce);
+        npub = zero_nonce;
     }
 
     aegis256_init(k, npub, state);

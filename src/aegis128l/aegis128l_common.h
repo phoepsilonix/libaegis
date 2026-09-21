@@ -1,8 +1,8 @@
 #ifndef AEGIS_ENCRYPT_BULK
-#    define AEGIS_ENCRYPT_BULK(dst, src, len, state) 0
-#    define AEGIS_DECRYPT_BULK(dst, src, len, state) 0
-#    define AEGIS_ABSORB_BULK(dst, src, len, state) 0
-#    define AEGIS_STREAM_BULK(dst, src, len, state) 0
+#    define AEGIS_ENCRYPT_BULK(dst, src, len, state)    0
+#    define AEGIS_DECRYPT_BULK(dst, src, len, state)    0
+#    define AEGIS_ABSORB_BULK(dst, src, len, state)     0
+#    define AEGIS_STREAM_BULK(dst, src, len, state)     0
 #    define AEGIS_STREAM_XOR_BULK(dst, src, len, state) 0
 #endif
 

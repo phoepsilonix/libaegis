@@ -105,8 +105,7 @@ AES_BLOCK_BCAX(const aes_block_t a, const aes_block_t b, const aes_block_t c)
 static inline aes_block_t
 AES_ROUND(const aes_block_t a, const aes_block_t b)
 {
-    return (aes_block_t) { vaesmcq_u8(vaeseq_u8(a.b0, b.b0)),
-                           vaesmcq_u8(vaeseq_u8(a.b1, b.b1)) };
+    return (aes_block_t) { vaesmcq_u8(vaeseq_u8(a.b0, b.b0)), vaesmcq_u8(vaeseq_u8(a.b1, b.b1)) };
 }
 
 /* T5 holds S5 XOR S4, and S3 is complemented within the bulk loop.

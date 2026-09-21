@@ -1,8 +1,8 @@
 #ifndef AEGIS_ENCRYPT_BULK
-#    define AEGIS_ENCRYPT_BULK(dst, src, len, state) 0
-#    define AEGIS_DECRYPT_BULK(dst, src, len, state) 0
-#    define AEGIS_ABSORB_BULK(dst, src, len, state) 0
-#    define AEGIS_STREAM_BULK(dst, src, len, state) 0
+#    define AEGIS_ENCRYPT_BULK(dst, src, len, state)    0
+#    define AEGIS_DECRYPT_BULK(dst, src, len, state)    0
+#    define AEGIS_ABSORB_BULK(dst, src, len, state)     0
+#    define AEGIS_STREAM_BULK(dst, src, len, state)     0
 #    define AEGIS_STREAM_XOR_BULK(dst, src, len, state) 0
 #endif
 
@@ -18,7 +18,7 @@ static inline void
 aegis128x4_update_nodata(aes_block_t *const state)
 {
     static CRYPTO_ALIGN(AES_BLOCK_LENGTH) const uint8_t zero_[AES_BLOCK_LENGTH] = { 0 };
-    const aes_block_t zero = AES_BLOCK_LOAD(zero_);
+    const aes_block_t                                   zero = AES_BLOCK_LOAD(zero_);
 
     aegis128x4_update(state, zero, zero);
 }
