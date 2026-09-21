@@ -74,6 +74,8 @@ aegis128x4_update_nodata(aes_block_t *const state)
     state[0] = AES_ENC(tmp, state[0]);
 }
 
+#        define AEGIS_UNROLL_X4 1
+
 #        include "aegis128x4_common.h"
 
 struct aegis128x4_implementation aegis128x4_avx512_implementation = {
