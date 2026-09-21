@@ -12,6 +12,7 @@
 static inline aegis_raf_ctx_internal *
 ctx_internal(CTX_TYPE *ctx)
 {
+    COMPILER_ASSERT((AEGIS_RAF_CTX_ALIGN & (AEGIS_RAF_CTX_ALIGN - 1)) == 0);
     COMPILER_ASSERT(sizeof(aegis_raf_ctx_internal) + AEGIS_RAF_CTX_ALIGN <= sizeof(CTX_TYPE));
     return (aegis_raf_ctx_internal *) AEGIS_RAF_CTX_ADDR(ctx);
 }
