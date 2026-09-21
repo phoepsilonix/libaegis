@@ -90,6 +90,8 @@ aegis256x4_update(aes_block_t *const state, const aes_block_t d)
     state[0] = AES_BLOCK_XOR(AES_ENC(tmp, state[0]), d);
 }
 
+#    ifdef AEGIS_ALWAYS_INLINE
+
 typedef struct {
     uint8x16_t b0;
     uint8x16_t b1;
@@ -130,7 +132,7 @@ AES_PAIR_ENC(const aes_pair_t a, const aes_pair_t b)
 /* Each pair of lanes evolves independently until finalization.
  * Processing pairs separately keeps the state and message in vector registers.
  */
-static inline __attribute__((always_inline)) size_t
+static AEGIS_ALWAYS_INLINE size_t
 aegis256x4_bulk(uint8_t *dst, const uint8_t *src, size_t len, aes_block_t *state,
                 const enum aegis_bulk_operation operation)
 {
@@ -186,45 +188,47 @@ aegis256x4_bulk(uint8_t *dst, const uint8_t *src, size_t len, aes_block_t *state
     return full;
 }
 
-static __attribute__((noinline)) size_t
+static AEGIS_NOINLINE size_t
 aegis256x4_encrypt_bulk(uint8_t *dst, const uint8_t *src, size_t len, aes_block_t *state)
 {
     return aegis256x4_bulk(dst, src, len, state, AEGIS_BULK_ENCRYPT);
 }
 
-#    define AEGIS_ENCRYPT_BULK aegis256x4_encrypt_bulk
+#        define AEGIS_ENCRYPT_BULK aegis256x4_encrypt_bulk
 
-static __attribute__((noinline)) size_t
+static AEGIS_NOINLINE size_t
 aegis256x4_decrypt_bulk(uint8_t *dst, const uint8_t *src, size_t len, aes_block_t *state)
 {
     return aegis256x4_bulk(dst, src, len, state, AEGIS_BULK_DECRYPT);
 }
 
-#    define AEGIS_DECRYPT_BULK aegis256x4_decrypt_bulk
+#        define AEGIS_DECRYPT_BULK aegis256x4_decrypt_bulk
 
-static __attribute__((noinline)) size_t
+static AEGIS_NOINLINE size_t
 aegis256x4_absorb_bulk(uint8_t *dst, const uint8_t *src, size_t len, aes_block_t *state)
 {
     return aegis256x4_bulk(dst, src, len, state, AEGIS_BULK_ABSORB);
 }
 
-#    define AEGIS_ABSORB_BULK aegis256x4_absorb_bulk
+#        define AEGIS_ABSORB_BULK aegis256x4_absorb_bulk
 
-static __attribute__((noinline)) size_t
+static AEGIS_NOINLINE size_t
 aegis256x4_stream_bulk(uint8_t *dst, const uint8_t *src, size_t len, aes_block_t *state)
 {
     return aegis256x4_bulk(dst, src, len, state, AEGIS_BULK_STREAM);
 }
 
-#    define AEGIS_STREAM_BULK aegis256x4_stream_bulk
+#        define AEGIS_STREAM_BULK aegis256x4_stream_bulk
 
-static __attribute__((noinline)) size_t
+static AEGIS_NOINLINE size_t
 aegis256x4_stream_xor_bulk(uint8_t *dst, const uint8_t *src, size_t len, aes_block_t *state)
 {
     return aegis256x4_bulk(dst, src, len, state, AEGIS_BULK_STREAM_XOR);
 }
 
-#    define AEGIS_STREAM_XOR_BULK aegis256x4_stream_xor_bulk
+#        define AEGIS_STREAM_XOR_BULK aegis256x4_stream_xor_bulk
+
+#    endif
 
 #    include "aegis256x4_common.h"
 

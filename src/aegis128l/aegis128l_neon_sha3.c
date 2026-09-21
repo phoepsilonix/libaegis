@@ -59,10 +59,12 @@ aegis128l_update(aes_block_t *const state, const aes_block_t d1, const aes_block
     state[0] = AES_BLOCK_XOR3(state[0], AES_ENC0(tmp), d1);
 }
 
+#    ifdef AEGIS_ALWAYS_INLINE
+
 /* AESE combines the two terms of a split word before its S-box.
  * Keeping words 3 and 7 complemented also lets BCAX form the keystream.
  */
-static inline __attribute__((always_inline)) size_t
+static AEGIS_ALWAYS_INLINE size_t
 aegis128l_bulk(uint8_t *dst, const uint8_t *src, size_t len, aes_block_t *state,
                const enum aegis_bulk_operation operation)
 {
@@ -132,45 +134,47 @@ aegis128l_bulk(uint8_t *dst, const uint8_t *src, size_t len, aes_block_t *state,
     return full;
 }
 
-static __attribute__((noinline)) size_t
+static AEGIS_NOINLINE size_t
 aegis128l_encrypt_bulk(uint8_t *dst, const uint8_t *src, size_t len, aes_block_t *state)
 {
     return aegis128l_bulk(dst, src, len, state, AEGIS_BULK_ENCRYPT);
 }
 
-#    define AEGIS_ENCRYPT_BULK aegis128l_encrypt_bulk
+#        define AEGIS_ENCRYPT_BULK aegis128l_encrypt_bulk
 
-static __attribute__((noinline)) size_t
+static AEGIS_NOINLINE size_t
 aegis128l_decrypt_bulk(uint8_t *dst, const uint8_t *src, size_t len, aes_block_t *state)
 {
     return aegis128l_bulk(dst, src, len, state, AEGIS_BULK_DECRYPT);
 }
 
-#    define AEGIS_DECRYPT_BULK aegis128l_decrypt_bulk
+#        define AEGIS_DECRYPT_BULK aegis128l_decrypt_bulk
 
-static __attribute__((noinline)) size_t
+static AEGIS_NOINLINE size_t
 aegis128l_absorb_bulk(uint8_t *dst, const uint8_t *src, size_t len, aes_block_t *state)
 {
     return aegis128l_bulk(dst, src, len, state, AEGIS_BULK_ABSORB);
 }
 
-#    define AEGIS_ABSORB_BULK aegis128l_absorb_bulk
+#        define AEGIS_ABSORB_BULK aegis128l_absorb_bulk
 
-static __attribute__((noinline)) size_t
+static AEGIS_NOINLINE size_t
 aegis128l_stream_bulk(uint8_t *dst, const uint8_t *src, size_t len, aes_block_t *state)
 {
     return aegis128l_bulk(dst, src, len, state, AEGIS_BULK_STREAM);
 }
 
-#    define AEGIS_STREAM_BULK aegis128l_stream_bulk
+#        define AEGIS_STREAM_BULK aegis128l_stream_bulk
 
-static __attribute__((noinline)) size_t
+static AEGIS_NOINLINE size_t
 aegis128l_stream_xor_bulk(uint8_t *dst, const uint8_t *src, size_t len, aes_block_t *state)
 {
     return aegis128l_bulk(dst, src, len, state, AEGIS_BULK_STREAM_XOR);
 }
 
-#    define AEGIS_STREAM_XOR_BULK aegis128l_stream_xor_bulk
+#        define AEGIS_STREAM_XOR_BULK aegis128l_stream_xor_bulk
+
+#    endif
 
 #    include "aegis128l_common.h"
 

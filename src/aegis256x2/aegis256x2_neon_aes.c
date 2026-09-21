@@ -82,7 +82,7 @@ aegis256x2_update(aes_block_t *const state, const aes_block_t d)
     state[0] = AES_BLOCK_XOR(AES_ENC(tmp, state[0]), d);
 }
 
-#    if defined(__ARM_FEATURE_SHA3)
+#    if defined(__ARM_FEATURE_SHA3) && defined(AEGIS_ALWAYS_INLINE)
 
 static inline aes_block_t
 AES_BLOCK_NOT(const aes_block_t a)
@@ -113,7 +113,7 @@ AES_ROUND(const aes_block_t a, const aes_block_t b)
  * BCAX forms the output mask, and AESE recovers S5 from T5 and S4.
  * S0 is held as x0 XOR y0, separating its input XOR from the AES round on S5.
  */
-static inline __attribute__((always_inline)) size_t
+static AEGIS_ALWAYS_INLINE size_t
 aegis256x2_bulk(uint8_t *dst, const uint8_t *src, size_t len, aes_block_t *state,
                 const enum aegis_bulk_operation operation, const int store_output)
 {
@@ -175,7 +175,7 @@ aegis256x2_bulk(uint8_t *dst, const uint8_t *src, size_t len, aes_block_t *state
     return full;
 }
 
-static __attribute__((noinline)) size_t
+static AEGIS_NOINLINE size_t
 aegis256x2_encrypt_bulk(uint8_t *dst, const uint8_t *src, size_t len, aes_block_t *state)
 {
     return aegis256x2_bulk(dst, src, len, state, AEGIS_BULK_ENCRYPT, 1);
@@ -183,7 +183,7 @@ aegis256x2_encrypt_bulk(uint8_t *dst, const uint8_t *src, size_t len, aes_block_
 
 #        define AEGIS_ENCRYPT_BULK aegis256x2_encrypt_bulk
 
-static __attribute__((noinline)) size_t
+static AEGIS_NOINLINE size_t
 aegis256x2_decrypt_bulk(uint8_t *dst, const uint8_t *src, size_t len, aes_block_t *state)
 {
     if (dst == NULL) {
@@ -194,7 +194,7 @@ aegis256x2_decrypt_bulk(uint8_t *dst, const uint8_t *src, size_t len, aes_block_
 
 #        define AEGIS_DECRYPT_BULK aegis256x2_decrypt_bulk
 
-static __attribute__((noinline)) size_t
+static AEGIS_NOINLINE size_t
 aegis256x2_stream_bulk(uint8_t *dst, const uint8_t *src, size_t len, aes_block_t *state)
 {
     return aegis256x2_bulk(dst, src, len, state, AEGIS_BULK_STREAM, 1);
@@ -202,7 +202,7 @@ aegis256x2_stream_bulk(uint8_t *dst, const uint8_t *src, size_t len, aes_block_t
 
 #        define AEGIS_STREAM_BULK aegis256x2_stream_bulk
 
-static __attribute__((noinline)) size_t
+static AEGIS_NOINLINE size_t
 aegis256x2_stream_xor_bulk(uint8_t *dst, const uint8_t *src, size_t len, aes_block_t *state)
 {
     return aegis256x2_bulk(dst, src, len, state, AEGIS_BULK_STREAM_XOR, 1);

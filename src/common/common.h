@@ -99,6 +99,14 @@ enum aegis_bulk_operation {
 #    define CRYPTO_ALIGN(x) __attribute__((aligned(x)))
 #endif
 
+#if defined(__GNUC__) || defined(__clang__)
+#    define AEGIS_ALWAYS_INLINE inline __attribute__((always_inline))
+#    define AEGIS_NOINLINE      __attribute__((noinline))
+#elif defined(_MSC_VER)
+#    define AEGIS_ALWAYS_INLINE __forceinline
+#    define AEGIS_NOINLINE      __declspec(noinline)
+#endif
+
 #if defined(__has_attribute)
 #    if __has_attribute(code_align)
 #        define CRYPTO_ALIGN_LOOP(x) __attribute__((code_align(x)))
