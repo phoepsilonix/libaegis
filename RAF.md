@@ -2,8 +2,7 @@
 
 RAF (Random-Access File) is libaegis's format for encrypted files that can be read and updated one chunk at a time.
 
-This document describes the bytes stored on disk and the cryptographic operations needed to write a compatible implementation.
-It covers version 1 as implemented in this repository, not an extensible container format.
+This document defines the byte layout and cryptographic construction of RAF version 1.
 
 A RAF file consists of a 64-byte header followed by fixed-size chunk records:
 
@@ -26,8 +25,6 @@ All stored integers are unsigned and little-endian.
 `LE32(x)` and `LE64(x)` mean the four-byte and eight-byte encodings of `x`.
 
 `||` means byte concatenation; slices such as `header[0:48]` exclude the end offset.
-
-Serialize fields explicitly rather than writing a native C structure.
 
 The algorithm identifier selects both the chunk cipher and the standalone AEGIS-MAC used for the header:
 
@@ -66,7 +63,6 @@ The chunk size must be between 1,024 and 1,048,576 inclusive and divisible by 16
 It need not be a power of two.
 
 Version 1 requires exactly this header size and has no reserved fields or stored flags.
-The API's create/truncate flags and scratch-buffer alignment do not appear on disk.
 
 Generate the file ID using a cryptographically secure random number generator.
 Keep it unchanged throughout the file's lifetime, including truncation to zero and subsequent growth.
@@ -111,11 +107,8 @@ The input must be shorter than the rate, and the output must not exceed the rate
 All RAF derivations fit these limits, so no further absorption or squeezing is needed.
 
 This is not ordinary SHAKE128/SHAKE256, which use 24 rounds, nor is it HKDF, KMAC, or KangarooTwelve.
-A cryptographic library exposing the Keccak-p permutation or the matching reduced-round sponge can supply this primitive.
 
 ### Key-derivation test vectors
-
-These public test inputs and expected outputs come from `src/test/kdf_test.zig`.
 
 For both vectors, use file ID `000102030405060708090a0b0c0d0e0f1011121314151617` and the 16-byte label above.
 The output shown is `enc_key || hdr_key`.
@@ -141,12 +134,13 @@ These vectors test key derivation, not header MACs or complete encrypted files.
 Use the standalone AEGIS-MAC corresponding to the algorithm ID, with `hdr_key`, an all-zero nonce of the algorithm's nonce length, and a 16-byte output:
 
 ```text
-state = AEGIS_MAC_init(hdr_key, zero_nonce)
-AEGIS_MAC_update(state, header[0:48])
-header[48:64] = AEGIS_MAC_final(state, tag_length = 16)
+header[48:64] = AEGIS_MAC(
+    key = hdr_key,
+    nonce = zero_nonce,
+    message = header[0:48],
+    tag_length = 16
+)
 ```
-
-This means the `*_mac_init`, `*_mac_update`, and `*_mac_final` operations in libaegis.
 
 Do not substitute an AEAD call with an empty plaintext and the header as associated data; standalone AEGIS-MAC has its own finalization.
 Do not compute a 32-byte MAC and truncate it.
@@ -154,7 +148,7 @@ Do not compute a 32-byte MAC and truncate it.
 Verify the MAC before trusting the logical file size or exposing authenticated metadata.
 A wrong master key and a modified header both cause authentication failure.
 
-When the logical file size changes, serialize the new header and recompute its MAC.
+The header MAC authenticates the current logical file size along with the other header fields.
 
 The all-zero MAC nonce is part of the standalone MAC construction, not a nonce to reuse for chunk encryption.
 
@@ -198,7 +192,7 @@ nonce = secure_random(N)
 (ciphertext, tag) = AEGIS_encrypt_detached(
     key = enc_key,
     nonce = nonce,
-    plaintext = full_chunk_buffer,
+    plaintext = chunk_plaintext,
     associated_data = aad,
     tag_length = 16
 )
@@ -227,12 +221,10 @@ Writers zero-fill bytes beyond the valid length when encrypting a partial final 
 These zeros are encrypted and authenticated; they are not a shorter ciphertext or a separate padding field.
 The length comes only from the authenticated header.
 
-However, shrinking a RAF file does **not** re-encrypt its retained final chunk.
-Bytes beyond the new logical end may therefore contain previously written plaintext inside the authenticated ciphertext.
+After truncation, the retained final chunk may still contain previously written plaintext beyond the new logical end.
+These authenticated tail bytes need not be zero and are not part of the logical file contents.
 
-A compatible reader must ignore these bytes, not reject the file because they are nonzero and never return them to the caller.
-
-Later growth must explicitly zero the newly exposed range rather than reveal old tail data.
+Later growth without new content in that range exposes plaintext zeros, not old tail data.
 
 ### Worked layout example
 
@@ -256,71 +248,44 @@ record 1 tag          = bytes [8304, 8320)
 The second chunk has 904 visible bytes and 3,192 bytes beyond logical EOF.
 Its associated data is the 24-byte file ID followed by `01 00 00 00 00 00 00 00` and `00 10 00 00`.
 
-## Opening and validating a file
+## Validity and authentication
 
-A reader can follow this sequence:
+A valid RAF file has:
 
-1. Require at least 64 bytes and read the header into a private buffer.
-2. Check the magic, header size, version, supported algorithm ID, and chunk-size constraints.
-3. Derive the per-file keys using the file ID from that buffer.
-4. Verify the header MAC against the same buffered header.
-   Do not reread different header bytes between parsing and verification.
-5. Compute the chunk count and required physical length using checked arithmetic.
-   In particular, require `chunk_count <= floor((UINT64_MAX - 64) / record_size)` before multiplication.
-   Also enforce the limits of the implementation's storage offsets and buffer sizes.
-6. Reject a backing store shorter than the required length.
-7. Authenticate records as they are read, or scan all records if whole-file verification is required.
+- A complete 64-byte header with the specified magic, header size, version, algorithm ID, and chunk size.
+- A valid header MAC under the per-file header key.
+- At least `minimum_physical_size` bytes, containing every record required by the logical file size.
+- A valid authentication tag for each required record, using its position-derived chunk index and the specified associated data.
 
-The current libaegis reader accepts backing stores larger than the required length.
-Trailing bytes are ignored and are not authenticated as part of the logical file.
-Do not infer the logical size from the physical size or interpret trailing bytes as additional records.
+Trailing bytes beyond `minimum_physical_size` are permitted but are not part of the logical file and are not authenticated by its header or records.
+They do not represent additional chunks.
+The logical size comes only from the authenticated header.
 
-`aegis_raf_probe()` performs structural checks but has no key and does not authenticate the header or check that all records exist.
-Its results are untrusted hints for algorithm selection and bounded buffer allocation.
+Header authentication alone does not authenticate chunk contents.
+Each record is authenticated independently; whole-file authentication requires all records belonging to the logical file.
 
-Opening a file authenticates its header, not every chunk; an unread corrupt chunk can remain undetected until accessed.
+For a plaintext offset `p` with `0 <= p < L`, the chunk index is `floor(p / C)` and the offset inside that chunk is `p % C`.
+Authentication covers the whole record even when only part of its plaintext belongs to the requested range.
 
-For a plaintext offset `p`, the chunk index is `floor(p / C)` and the offset inside that chunk is `p % C`.
-Bound reads by `L` and split cross-chunk reads accordingly.
+## Changes to file contents
 
-Check additions such as `offset + length` for overflow before doing I/O.
+A changed chunk is represented by a complete authenticated record with a fresh random nonce.
+A partial overwrite preserves logical plaintext outside the changed range.
 
-Treat short reads, incomplete writes, and authentication failures as errors, not as empty or zero-filled records.
+Growth without supplied content fills the newly visible range with plaintext zeros.
+Every required chunk has a nonce, ciphertext, and valid tag, including chunks whose plaintext is all zeros.
+An absent record or a run of raw zero bytes is not an encrypted zero chunk.
 
-## Updating, extending, and truncating
+The header's logical size determines which records and plaintext bytes belong to the file after growth or truncation.
+Records beyond that size are outside the logical file, whether or not they remain physically present.
 
-For a partial overwrite, authenticate and decrypt the existing chunk, modify the requested bytes, then encrypt the entire chunk with a fresh nonce.
-Preserve valid bytes both before and after the changed range.
-
-A complete chunk overwrite can replace the record without reading its old contents.
-
-A write beyond EOF or a truncation that grows the file fills the gap with plaintext zeros.
-Every newly required chunk must have a real nonce, ciphertext, and valid tag.
-An absent record or a filesystem hole containing raw zeros is not an encrypted zero chunk.
-
-The reference implementation uses this ordering:
-
-- Growth: enlarge the backing store if more records are needed, write the affected records, then publish the larger logical size in a newly authenticated header.
-- Shrink: publish the smaller logical size in a newly authenticated header, then shorten the backing store to `64 + chunk_count * record_size`.
-  Retained chunk records are not rewritten.
-- Overwrite without growth: replace the affected records; the header need not change.
-
-These operations are **not transactions**.
-There is no journal, redundant header, generation counter, or atomic multi-record commit in the format.
-
-A torn header write can make the file unreadable; a failed multi-record write can leave some records changed and others unchanged.
-
-Storage durability and crash recovery need an application-level design.
-
-In libaegis, failures after a mutation begins make the context unusable until it is closed and reopened.
-Reopening is not rollback or repair, and it may fail if the header is damaged.
-
-A sync failure alone does not invalidate the context.
+The format defines no journal, redundant header, generation counter, or atomic multi-record commit.
+It does not specify write ordering, storage durability, or crash recovery.
 
 ## Optional application context binding
 
-Applications may use `aegis_raf_derive_master_key()` before the per-file derivation.
-This does not change the wire format and is not indicated in the header.
+A master key may optionally be derived from an application key and context before the per-file derivation.
+This derivation does not change the byte layout and is not indicated in the header.
 
 Both writer and reader must agree on the application key and the exact context bytes outside the RAF file.
 
@@ -347,18 +312,18 @@ If the application starts from a password, it must separately define a suitable 
 
 ## Optional Merkle tree
 
-The libaegis Merkle tree is application-maintained state, not an on-disk RAF extension.
-Enabling it adds no header flags, records, roots, or trailers to the file.
-A reader does not need a Merkle implementation to decrypt RAF files.
+See the [Merkle tree format](MERKLE.md) for the tree structure, hash inputs, and commitment construction.
 
-Leaf hashes cover the valid plaintext bytes of each chunk, with the chunk index supplied to the callback.
+The optional Merkle tree is separate from the RAF file, not an on-disk RAF extension.
+It adds no header flags, records, roots, or trailers to the file.
+
+Leaf hashes cover each chunk's valid plaintext bytes, their length, and the chunk index.
 They are not the record's AEAD tags, and they exclude bytes beyond logical EOF.
 
-The application supplies the leaf, parent, empty-node, and commitment hash functions, so RAF does not prescribe a universal content digest.
+An application-defined hash profile specifies the leaf, parent, empty-node, and commitment hash functions.
+RAF does not prescribe a universal content digest.
 
-The tree is initialized empty on open; rebuild it from authenticated chunk data before using it as a commitment to existing contents.
-
-The commitment callback receives the structural root, logical file size, and this 32-byte context:
+The file commitment binds the structural root, logical file size, and this 32-byte context:
 
 ```text
 version || algorithm_id || LE32(chunk_size) || file_id || 00 00
@@ -366,4 +331,3 @@ version || algorithm_id || LE32(chunk_size) || file_id || 00 00
 
 The application defines how to hash these inputs and how to preserve a trusted commitment separately.
 A commitment recomputed only from the current file cannot establish that the file is the latest version.
-
