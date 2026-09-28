@@ -171,6 +171,8 @@ This mode does not detect changes to the data. Use it only when something else a
 
 ### Random-Access File API
 
+For the on-disk layout, key derivation, and guidance on writing a compatible implementation, see the [RAF file format guide](RAF.md).
+
 The RAF (Random-Access File) API lets you work with encrypted files as naturally as regular files. Read any byte range, write anywhere, extend or truncate at will, all with full encryption and authentication. Files can be arbitrarily large without ever loading them entirely into memory. This makes it straightforward to build encrypted filesystems, databases, or any application that needs to modify encrypted data in place without re-encrypting the entire file.
 
 ```c
